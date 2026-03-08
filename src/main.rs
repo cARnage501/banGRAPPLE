@@ -275,6 +275,10 @@ fn rebuild_image_command(args: &[String]) -> Result<(), String> {
         result.materialized.mode_updates_applied
     );
     println!(
+        "Timestamp updates applied: {}",
+        result.materialized.timestamp_updates_applied
+    );
+    println!(
         "Ownership updates applied: {}",
         result.materialized.ownership_updates_applied
     );

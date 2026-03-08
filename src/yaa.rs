@@ -159,6 +159,7 @@ pub struct YaaMaterializationResult {
     pub files_created: u64,
     pub links_created: u64,
     pub mode_updates_applied: u64,
+    pub timestamp_updates_applied: u64,
     pub ownership_updates_applied: u64,
     pub ownership_update_failures: u64,
     pub xattr_sidecars_written: u64,
@@ -171,6 +172,12 @@ pub struct YaaMaterializationResult {
 struct DeferredModeUpdate {
     path: PathBuf,
     mode: u16,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct DeferredTimestampUpdate {
+    path: PathBuf,
+    modified_time: YaaTimespec,
 }
 
 #[derive(Debug, Serialize)]
@@ -684,6 +691,7 @@ impl<R: Read + Seek> YaaStreamReader<R> {
         fs::create_dir_all(&xattr_root)?;
         let mut metadata_file = File::create(&metadata_path)?;
         let mut deferred_directory_modes = Vec::new();
+        let mut deferred_directory_timestamps = Vec::new();
         let mut result = YaaMaterializationResult {
             output_root: output_root.to_path_buf(),
             records_written: 0,
@@ -691,6 +699,7 @@ impl<R: Read + Seek> YaaStreamReader<R> {
             files_created: 0,
             links_created: 0,
             mode_updates_applied: 0,
+            timestamp_updates_applied: 0,
             ownership_updates_applied: 0,
             ownership_update_failures: 0,
             xattr_sidecars_written: 0,
@@ -721,6 +730,11 @@ impl<R: Read + Seek> YaaStreamReader<R> {
                             record.mode,
                             &mut deferred_directory_modes,
                         );
+                        queue_directory_timestamp_if_present(
+                            &target_path,
+                            record.modified_time.as_ref(),
+                            &mut deferred_directory_timestamps,
+                        );
                         apply_ownership_if_present(&target_path, &record, &mut result);
                     }
                     Some(YaaObjectType::File) => {
@@ -735,6 +749,11 @@ impl<R: Read + Seek> YaaStreamReader<R> {
                         }
                         result.files_created += 1;
                         apply_mode_if_present(&target_path, record.mode, &mut result)?;
+                        apply_modified_time_if_present(
+                            &target_path,
+                            record.modified_time.as_ref(),
+                            &mut result,
+                        )?;
                         apply_ownership_if_present(&target_path, &record, &mut result);
                     }
                     Some(YaaObjectType::Link) => {
@@ -772,6 +791,7 @@ impl<R: Read + Seek> YaaStreamReader<R> {
         }
 
         apply_deferred_directory_modes(&deferred_directory_modes, &mut result)?;
+        apply_deferred_directory_timestamps(&deferred_directory_timestamps, &mut result)?;
 
         Ok(result)
     }
@@ -1000,6 +1020,43 @@ fn apply_deferred_directory_modes(
     Ok(())
 }
 
+fn apply_modified_time_if_present(
+    target_path: &Path,
+    modified_time: Option<&YaaTimespec>,
+    result: &mut YaaMaterializationResult,
+) -> Result<(), YaaStreamError> {
+    let Some(modified_time) = modified_time else {
+        return Ok(());
+    };
+    set_timespec_path(target_path, modified_time)?;
+    result.timestamp_updates_applied += 1;
+    Ok(())
+}
+
+fn queue_directory_timestamp_if_present(
+    target_path: &Path,
+    modified_time: Option<&YaaTimespec>,
+    deferred_directory_timestamps: &mut Vec<DeferredTimestampUpdate>,
+) {
+    if let Some(modified_time) = modified_time {
+        deferred_directory_timestamps.push(DeferredTimestampUpdate {
+            path: target_path.to_path_buf(),
+            modified_time: modified_time.clone(),
+        });
+    }
+}
+
+fn apply_deferred_directory_timestamps(
+    deferred_directory_timestamps: &[DeferredTimestampUpdate],
+    result: &mut YaaMaterializationResult,
+) -> Result<(), YaaStreamError> {
+    for update in deferred_directory_timestamps.iter().rev() {
+        set_timespec_path(&update.path, &update.modified_time)?;
+        result.timestamp_updates_applied += 1;
+    }
+    Ok(())
+}
+
 fn apply_ownership_if_present(
     target_path: &Path,
     record: &YaaRecord,
@@ -1014,6 +1071,52 @@ fn apply_ownership_if_present(
     match lchown_path(target_path, uid, gid) {
         Ok(()) => result.ownership_updates_applied += 1,
         Err(_) => result.ownership_update_failures += 1,
+    }
+}
+
+fn set_timespec_path(path: &Path, modified_time: &YaaTimespec) -> io::Result<()> {
+    let bytes = path.as_os_str().as_bytes();
+    let c_path = CString::new(bytes).map_err(|_| {
+        io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!("path '{}' contains an interior NUL byte", path.display()),
+        )
+    })?;
+
+    let seconds = i64::try_from(modified_time.seconds).map_err(|_| {
+        io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!(
+                "timestamp seconds '{}' do not fit in libc time_t for '{}'",
+                modified_time.seconds,
+                path.display()
+            ),
+        )
+    })?;
+    let nanos = i64::from(modified_time.nanos.unwrap_or(0));
+    let times = [
+        libc::timespec {
+            tv_sec: seconds as libc::time_t,
+            tv_nsec: nanos as _,
+        },
+        libc::timespec {
+            tv_sec: seconds as libc::time_t,
+            tv_nsec: nanos as _,
+        },
+    ];
+
+    let status = unsafe {
+        libc::utimensat(
+            libc::AT_FDCWD,
+            c_path.as_ptr(),
+            times.as_ptr(),
+            libc::AT_SYMLINK_NOFOLLOW,
+        )
+    };
+    if status == 0 {
+        Ok(())
+    } else {
+        Err(io::Error::last_os_error())
     }
 }
 
@@ -1156,11 +1259,30 @@ mod tests {
 
     use super::{YaaField, YaaObjectType, YaaStreamReader, YaaTag, parse_record, parse_records};
 
+    #[derive(Clone, Copy)]
+    struct TestFileMetadata {
+        uid: u32,
+        gid: u32,
+        mode: u16,
+        seconds: u64,
+        nanos: Option<u32>,
+    }
+
     fn push_tag(bytes: &mut Vec<u8>, tag: &[u8; 4]) {
         bytes.extend_from_slice(tag);
     }
 
     fn build_directory_record(path: &str, uid_tag: &[u8; 4], uid: u32) -> Vec<u8> {
+        build_directory_record_with_timestamp(path, uid_tag, uid, 123, None)
+    }
+
+    fn build_directory_record_with_timestamp(
+        path: &str,
+        uid_tag: &[u8; 4],
+        uid: u32,
+        seconds: u64,
+        nanos: Option<u32>,
+    ) -> Vec<u8> {
         let mut metadata = Vec::new();
         push_tag(&mut metadata, b"TYP1");
         metadata.push(b'D');
@@ -1180,8 +1302,17 @@ mod tests {
         metadata.extend_from_slice(&0o755u16.to_le_bytes());
         push_tag(&mut metadata, b"FLG1");
         metadata.push(0);
-        push_tag(&mut metadata, b"MTMS");
-        metadata.extend_from_slice(&123u64.to_le_bytes());
+        match nanos {
+            Some(nanos) => {
+                push_tag(&mut metadata, b"MTMT");
+                metadata.extend_from_slice(&seconds.to_le_bytes());
+                metadata.extend_from_slice(&nanos.to_le_bytes());
+            }
+            None => {
+                push_tag(&mut metadata, b"MTMS");
+                metadata.extend_from_slice(&seconds.to_le_bytes());
+            }
+        }
 
         let mut record = Vec::new();
         record.extend_from_slice(b"YAA1");
@@ -1191,16 +1322,25 @@ mod tests {
     }
 
     fn build_file_record(path: &str, payload: &[u8], big: bool) -> Vec<u8> {
-        build_file_record_with_metadata(path, payload, big, 0, 0, 0o644)
+        build_file_record_with_metadata(
+            path,
+            payload,
+            big,
+            TestFileMetadata {
+                uid: 0,
+                gid: 0,
+                mode: 0o644,
+                seconds: 456,
+                nanos: None,
+            },
+        )
     }
 
     fn build_file_record_with_metadata(
         path: &str,
         payload: &[u8],
         big: bool,
-        uid: u32,
-        gid: u32,
-        mode: u16,
+        metadata_spec: TestFileMetadata,
     ) -> Vec<u8> {
         let mut metadata = Vec::new();
         push_tag(&mut metadata, b"TYP1");
@@ -1209,15 +1349,24 @@ mod tests {
         metadata.extend_from_slice(&(path.len() as u16).to_le_bytes());
         metadata.extend_from_slice(path.as_bytes());
         push_tag(&mut metadata, b"UID4");
-        metadata.extend_from_slice(&uid.to_le_bytes());
+        metadata.extend_from_slice(&metadata_spec.uid.to_le_bytes());
         push_tag(&mut metadata, b"GID4");
-        metadata.extend_from_slice(&gid.to_le_bytes());
+        metadata.extend_from_slice(&metadata_spec.gid.to_le_bytes());
         push_tag(&mut metadata, b"MOD2");
-        metadata.extend_from_slice(&mode.to_le_bytes());
+        metadata.extend_from_slice(&metadata_spec.mode.to_le_bytes());
         push_tag(&mut metadata, b"FLG4");
         metadata.extend_from_slice(&524288u32.to_le_bytes());
-        push_tag(&mut metadata, b"MTMS");
-        metadata.extend_from_slice(&456u64.to_le_bytes());
+        match metadata_spec.nanos {
+            Some(nanos) => {
+                push_tag(&mut metadata, b"MTMT");
+                metadata.extend_from_slice(&metadata_spec.seconds.to_le_bytes());
+                metadata.extend_from_slice(&nanos.to_le_bytes());
+            }
+            None => {
+                push_tag(&mut metadata, b"MTMS");
+                metadata.extend_from_slice(&metadata_spec.seconds.to_le_bytes());
+            }
+        }
         if big {
             push_tag(&mut metadata, b"DATB");
             metadata.extend_from_slice(&(payload.len() as u32).to_le_bytes());
@@ -1406,13 +1555,24 @@ mod tests {
             0o755
         );
         assert_eq!(
+            fs::metadata(output_root.join("System")).unwrap().mtime(),
+            123
+        );
+        assert_eq!(
             fs::metadata(output_root.join("System/.localized"))
                 .unwrap()
                 .mode()
                 & 0o7777,
             0o644
         );
+        assert_eq!(
+            fs::metadata(output_root.join("System/.localized"))
+                .unwrap()
+                .mtime(),
+            456
+        );
         assert_eq!(result.mode_updates_applied, 2);
+        assert_eq!(result.timestamp_updates_applied, 2);
         assert!(result.metadata_path.exists());
         assert!(result.xattr_root.exists());
 
@@ -1425,9 +1585,13 @@ mod tests {
             "System/owned.txt",
             b"owned",
             false,
-            unsafe { libc::geteuid() },
-            unsafe { libc::getegid() },
-            0o640,
+            TestFileMetadata {
+                uid: unsafe { libc::geteuid() },
+                gid: unsafe { libc::getegid() },
+                mode: 0o640,
+                seconds: 456,
+                nanos: None,
+            },
         );
         let unique = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -1440,11 +1604,44 @@ mod tests {
         let metadata = fs::metadata(output_root.join("System/owned.txt")).unwrap();
 
         assert_eq!(metadata.mode() & 0o7777, 0o640);
+        assert_eq!(metadata.mtime(), 456);
         assert_eq!(metadata.uid(), unsafe { libc::geteuid() });
         assert_eq!(metadata.gid(), unsafe { libc::getegid() });
         assert_eq!(result.mode_updates_applied, 1);
+        assert_eq!(result.timestamp_updates_applied, 1);
         assert_eq!(result.ownership_updates_applied, 1);
         assert_eq!(result.ownership_update_failures, 0);
+
+        let _ = fs::remove_dir_all(output_root);
+    }
+
+    #[test]
+    fn materialize_prefix_applies_nanosecond_timestamps() {
+        let first = build_file_record_with_metadata(
+            "System/nanos.txt",
+            b"nanos",
+            false,
+            TestFileMetadata {
+                uid: 0,
+                gid: 0,
+                mode: 0o644,
+                seconds: 789,
+                nanos: Some(123_456_789),
+            },
+        );
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let output_root = std::env::temp_dir().join(format!("yaa-materialize-time-{unique}"));
+
+        let mut reader = YaaStreamReader::new(Cursor::new(first));
+        let result = reader.materialize_prefix(&output_root, 10).unwrap();
+        let metadata = fs::metadata(output_root.join("System/nanos.txt")).unwrap();
+
+        assert_eq!(metadata.mtime(), 789);
+        assert_eq!(metadata.mtime_nsec(), 123_456_789);
+        assert_eq!(result.timestamp_updates_applied, 1);
 
         let _ = fs::remove_dir_all(output_root);
     }
