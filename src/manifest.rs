@@ -11,6 +11,8 @@ use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 use xz2::read::XzDecoder;
 
+use crate::assets::resolve_asset_roots;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ResolvedManifestPath {
     pub manifest_key: String,
@@ -105,6 +107,7 @@ pub fn inspect_runtime_manifest_file(
     metadata_path: &Path,
     asset_root: &Path,
 ) -> Result<RuntimeManifestReport, ManifestError> {
+    let resolved_roots = resolve_asset_roots(asset_root);
     let metadata: JsonValue = serde_json::from_slice(&fs::read(metadata_path)?)?;
     let object = metadata
         .as_object()
@@ -178,7 +181,7 @@ pub fn inspect_runtime_manifest_file(
         let resolved_paths = dict
             .get("Manifest")
             .and_then(Value::as_dictionary)
-            .map(|manifest| resolve_manifest_paths(manifest, asset_root))
+            .map(|manifest| resolve_manifest_paths(manifest, &resolved_roots.asset_root))
             .unwrap_or_default();
 
         reports.push(BuildIdentityReport {

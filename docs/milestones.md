@@ -197,6 +197,60 @@ This milestone does not yet prove:
 - unresolved contract classes have explicit materialized producers
 - optional synthetic compatibility behavior has been designed or implemented
 
+## Milestone 7: BaseSystem/Runtime Substrate Integrated
+
+The repo now has a native joined view of the BaseSystem/runtime substrate instead of three separate partial probes.
+
+Implemented in this phase:
+
+- canonical resolution of payload-root vs `AssetData` vs `payloadv2` roots
+- nested `AssetData` support in BaseSystem evidence inspection
+- nested `AssetData` support in stageable runtime discovery
+- a native joined runtime-substrate report that combines:
+  - stageable BaseSystem runtime pairs
+  - BaseSystem patch evidence
+  - cryptex image patch inventory
+  - optional runtime manifest evidence
+- CLI surface:
+  - `inspect-runtime-substrate /path/to/payload-root-or-AssetData [metadata-root]`
+  - improved `discover-runtime`
+  - improved `inspect-basesystem`
+
+Observed result on the workstation payload root:
+
+- input root resolved to:
+  - `/media/tc/WD2T/banGRAPPLE/payload-root`
+- asset root resolved to:
+  - `/media/tc/WD2T/banGRAPPLE/payload-root/AssetData`
+- substrate kind:
+  - `patch-backed-basesystem`
+- stageable BaseSystem runtime:
+  - not present
+- BaseSystem patches:
+  - `x86_64BaseSystem.dmg` present, `BXDIFF50`
+  - `arm64eBaseSystem.dmg` present, `BXDIFF50`
+- cryptex image patches:
+  - `cryptex-app` present, `RIDIFF10`
+  - `cryptex-system-arm64e` present, `RIDIFF10`
+  - `cryptex-system-x86_64` present, `RIDIFF10`
+
+Verification:
+
+- `cargo test -- --nocapture`
+- observed result: `74` tests passed, `0` failed
+
+This milestone proves:
+
+- the repo now models the real workstation runtime substrate instead of assuming a flat `AssetData` input
+- BaseSystem/runtime substrate evidence is integrated natively in Rust
+- patch-backed BaseSystem and cryptex patch layers are surfaced together as one reconstruction surface
+
+This milestone does not yet prove:
+
+- BaseSystem patch synthesis is implemented
+- cryptex patch application is implemented
+- final image reconstruction is complete
+
 ## Milestone 6: Deterministic Native Audit Receipts
 
 The native rebuild audit now emits byte-for-byte deterministic JSON receipts for a fixed rebuilt tree.

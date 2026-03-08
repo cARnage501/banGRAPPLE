@@ -1,4 +1,5 @@
 pub mod audit;
+pub mod assets;
 pub mod basesystem;
 pub mod bootloader;
 pub mod cache;
@@ -11,6 +12,7 @@ pub mod installer;
 pub mod manifest;
 pub mod pipeline;
 pub mod rebuild;
+pub mod substrate;
 pub mod tui;
 pub mod xar;
 pub mod yaa;

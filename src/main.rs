@@ -12,13 +12,13 @@ use ban_grapple::bootloader::{
 };
 use ban_grapple::catalog::{InstallerRelease, fetch_releases, refresh_releases};
 use ban_grapple::disk::{DiskDevice, SafetyVerdict, discover_disks};
-use ban_grapple::dmg::discover_runtime_assets;
 use ban_grapple::image::ImageChannel;
 use ban_grapple::manifest::inspect_runtime_manifest;
 use ban_grapple::pipeline::{
     WorkflowMode, build_installer_with_options, deploy_system_with_options,
 };
 use ban_grapple::rebuild::rebuild_image;
+use ban_grapple::substrate::{RuntimeSubstrateKind, inspect_runtime_substrate};
 use ban_grapple::tui::{render_disks, render_plan, render_releases};
 use ban_grapple::xar::{extract_named_member, inspect_archive};
 use ban_grapple::yaa::YaaStreamReader;
@@ -50,6 +50,7 @@ fn run() -> Result<(), String> {
             Ok(())
         }
         Some("inspect-runtime-manifest") => inspect_runtime_manifest_command(&args),
+        Some("inspect-runtime-substrate") => inspect_runtime_substrate_command(&args),
         Some("discover-runtime") => discover_runtime(&args),
         Some("inspect-basesystem") => inspect_basesystem(&args),
         Some("inspect-xar") => inspect_xar(&args),
@@ -449,9 +450,13 @@ fn audit_rebuild_command(args: &[String]) -> Result<(), String> {
 fn inspect_basesystem(args: &[String]) -> Result<(), String> {
     let root = args
         .get(2)
-        .ok_or_else(|| "usage: ban-grapple inspect-basesystem /path/to/AssetData".to_string())?;
+        .ok_or_else(|| {
+            "usage: ban-grapple inspect-basesystem /path/to/payload-root-or-AssetData".to_string()
+        })?;
     let report = inspect_base_system_evidence(Path::new(root)).map_err(|err| err.to_string())?;
+    println!("Input root: {}", report.input_root.display());
     println!("Asset root: {}", report.asset_root.display());
+    println!("payloadv2 root: {}", report.payloadv2_root.display());
     print_basesystem_artifact("x86 patch", &report.x86_patch);
     print_basesystem_artifact("x86 patch ecc", &report.x86_patch_ecc);
     print_basesystem_artifact("arm64 patch", &report.arm64_patch);
@@ -463,23 +468,31 @@ fn inspect_basesystem(args: &[String]) -> Result<(), String> {
 fn discover_runtime(args: &[String]) -> Result<(), String> {
     let root = args
         .get(2)
-        .ok_or_else(|| "usage: ban-grapple discover-runtime /path/to/AssetData".to_string())?;
-    let report = discover_runtime_assets(Path::new(root)).map_err(|err| err.to_string())?;
-    println!("Asset root: {}", root);
+        .ok_or_else(|| {
+            "usage: ban-grapple discover-runtime /path/to/payload-root-or-AssetData".to_string()
+        })?;
+    let report =
+        inspect_runtime_substrate(Path::new(root), None).map_err(|err| err.to_string())?;
+    println!("Input root: {}", report.input_root.display());
+    println!("Asset root: {}", report.asset_root.display());
+    println!("Substrate kind: {}", report.substrate_kind.label());
 
-    match report.base_system_pair {
+    match report.runtime_assets.base_system_pair {
         Some(pair) => {
             println!("BaseSystem runtime:");
             println!("  dmg: {}", pair.dmg.display());
             println!("  chunklist: {}", pair.chunklist.display());
             println!("  dmg size: {} bytes", pair.dmg_size_bytes);
         }
+        None if report.substrate_kind == RuntimeSubstrateKind::PatchBackedBaseSystem => {
+            println!("BaseSystem runtime: patch-backed substrate present (no stageable DMG)");
+        }
         None => println!("BaseSystem runtime: not found"),
     }
 
-    if !report.suramdisk_pairs.is_empty() {
+    if !report.runtime_assets.suramdisk_pairs.is_empty() {
         println!("SURamDisk candidates:");
-        for pair in report.suramdisk_pairs {
+        for pair in report.runtime_assets.suramdisk_pairs {
             println!("  name: {}", pair.basename);
             println!("    dmg: {}", pair.dmg.display());
             if let Some(chunklist) = pair.chunklist {
@@ -489,16 +502,93 @@ fn discover_runtime(args: &[String]) -> Result<(), String> {
         }
     }
 
+    if report.substrate_kind == RuntimeSubstrateKind::PatchBackedBaseSystem {
+        println!(
+            "BaseSystem patches: x86={} arm64e={} cryptex_image_patches={}",
+            report.base_system_evidence.x86_patch.exists,
+            report.base_system_evidence.arm64_patch.exists,
+            report.image_patches.len()
+        );
+    }
+
+    Ok(())
+}
+
+fn inspect_runtime_substrate_command(args: &[String]) -> Result<(), String> {
+    let root = args.get(2).ok_or_else(|| {
+        "usage: ban-grapple inspect-runtime-substrate /path/to/payload-root-or-AssetData [metadata-root]".to_string()
+    })?;
+    let metadata_root = args.get(3).map(Path::new);
+    let report =
+        inspect_runtime_substrate(Path::new(root), metadata_root).map_err(|err| err.to_string())?;
+
+    println!("Input root: {}", report.input_root.display());
+    println!("Asset root: {}", report.asset_root.display());
+    println!("payloadv2 root: {}", report.payloadv2_root.display());
+    println!("Substrate kind: {}", report.substrate_kind.label());
+
+    match report.runtime_assets.base_system_pair {
+        Some(pair) => {
+            println!("Stageable BaseSystem runtime:");
+            println!("  dmg: {}", pair.dmg.display());
+            println!("  chunklist: {}", pair.chunklist.display());
+            println!("  dmg size: {} bytes", pair.dmg_size_bytes);
+        }
+        None => println!("Stageable BaseSystem runtime: not found"),
+    }
+
+    if !report.runtime_assets.suramdisk_pairs.is_empty() {
+        println!("SURamDisk candidates:");
+        for pair in report.runtime_assets.suramdisk_pairs {
+            println!("  name: {}", pair.basename);
+            println!("    dmg: {}", pair.dmg.display());
+            if let Some(chunklist) = pair.chunklist {
+                println!("    chunklist: {}", chunklist.display());
+            }
+            println!("    dmg size: {} bytes", pair.dmg_size_bytes);
+        }
+    }
+
+    println!("BaseSystem patch evidence:");
+    print_basesystem_artifact("x86 patch", &report.base_system_evidence.x86_patch);
+    print_basesystem_artifact("x86 patch ecc", &report.base_system_evidence.x86_patch_ecc);
+    print_basesystem_artifact("arm64 patch", &report.base_system_evidence.arm64_patch);
+    print_basesystem_artifact(
+        "restore chunklist",
+        &report.base_system_evidence.restore_chunklist,
+    );
+    print_basesystem_artifact("x86 trustcache", &report.base_system_evidence.x86_trustcache);
+
+    if !report.image_patches.is_empty() {
+        println!("Cryptex image patches:");
+        for patch in report.image_patches {
+            println!("  {}:", patch.name);
+            println!("    path: {}", patch.path.display());
+            println!("    size: {} bytes", patch.size_bytes.unwrap_or(0));
+            println!("    starts_with_ridiff: {}", patch.starts_with_ridiff);
+        }
+    }
+
+    if let Some(manifest) = report.manifest {
+        println!("Runtime manifest identities: {}", manifest.identities.len());
+        if let Some(build) = manifest.build.as_deref() {
+            println!("Manifest build: {build}");
+        }
+        if let Some(version) = manifest.os_version.as_deref() {
+            println!("Manifest OS version: {version}");
+        }
+    }
+
     Ok(())
 }
 
 fn inspect_runtime_manifest_command(args: &[String]) -> Result<(), String> {
     let metadata_root = args.get(2).ok_or_else(|| {
-        "usage: ban-grapple inspect-runtime-manifest /path/to/metadata-or-directory /path/to/AssetData"
+        "usage: ban-grapple inspect-runtime-manifest /path/to/metadata-or-directory /path/to/payload-root-or-AssetData"
             .to_string()
     })?;
     let asset_root = args.get(3).ok_or_else(|| {
-        "usage: ban-grapple inspect-runtime-manifest /path/to/metadata-or-directory /path/to/AssetData"
+        "usage: ban-grapple inspect-runtime-manifest /path/to/metadata-or-directory /path/to/payload-root-or-AssetData"
             .to_string()
     })?;
 
@@ -903,7 +993,7 @@ fn prompt(message: &str) -> Result<String, String> {
 
 fn print_help() {
     println!(
-        "ban-grapple\n\nWith no command, start an interactive read-only planning flow.\n\nCommands:\n  list-releases                                                     Show macOS releases, refreshing automatically every 24 hours\n  refresh-releases                                                  Force a live catalog refresh and replace the cache\n  list-disks                                                        Inspect local block devices safely\n  inspect-runtime-manifest /path/to/metadata-or-directory /path/to/AssetData\n                                                                   Decode PreflightBuildManifest and report resolved runtime paths\n  discover-runtime /path/to/AssetData                              Discover BaseSystem or SURamDisk runtime pairs in extracted assets\n  inspect-basesystem /path/to/AssetData                            Report the separate BaseSystem patch and trust artifacts\n  inspect-xar /path/to/InstallAssistant.pkg                         List XAR members with resolved absolute offsets\n  inspect-yaa /path/to/decoded-yaa.bin [--start-offset N] [--records N]\n                                                                   Summarize a decoded YAA stream without materializing file payloads\n  inspect-yaa-regions /path/to/decoded-yaa.bin [--start-offset N] [--records-per-region N] [--regions N]\n                                                                   Summarize consecutive regions of a decoded YAA stream\n  materialize-yaa-prefix /path/to/decoded-yaa.bin /path/to/output-root [--start-offset N] [--records N]\n                                                                   Reconstruct a small decoded YAA prefix into a filesystem tree\n  rebuild-image /path/to/AssetData-or-payloadv2 /path/to/output-root\n                                                                   Decode ordered payloadv2 shards and reconstruct the full filesystem tree\n  audit-rebuild /path/to/rebuilt-tree\n                                                                   Audit replay coverage, modes, symlinks, and xattr sidecar coverage\n  extract-sharedsupport /path/to/InstallAssistant.pkg /path/to/SharedSupport.dmg\n                                                                   Extract the SharedSupport.dmg member read-only from InstallAssistant.pkg\n  plan-installer [--release SELECTOR] [--efi PATH | --fetch-opencore] [--refresh-artifacts] /dev/sdX\n                                                                   Build a dry installer-media plan with a resolved EFI source\n  plan-system [--release SELECTOR] [--channel stable|beta|lab] [--refresh-artifacts] /dev/sdX\n                                                                   Build a dry full-system deployment plan"
+        "ban-grapple\n\nWith no command, start an interactive read-only planning flow.\n\nCommands:\n  list-releases                                                     Show macOS releases, refreshing automatically every 24 hours\n  refresh-releases                                                  Force a live catalog refresh and replace the cache\n  list-disks                                                        Inspect local block devices safely\n  inspect-runtime-manifest /path/to/metadata-or-directory /path/to/payload-root-or-AssetData\n                                                                   Decode PreflightBuildManifest and report resolved runtime paths\n  inspect-runtime-substrate /path/to/payload-root-or-AssetData [metadata-root]\n                                                                   Join BaseSystem patches, runtime assets, cryptex image patches, and optional manifest evidence\n  discover-runtime /path/to/payload-root-or-AssetData              Discover BaseSystem or SURamDisk runtime pairs in extracted assets\n  inspect-basesystem /path/to/payload-root-or-AssetData            Report the separate BaseSystem patch and trust artifacts\n  inspect-xar /path/to/InstallAssistant.pkg                         List XAR members with resolved absolute offsets\n  inspect-yaa /path/to/decoded-yaa.bin [--start-offset N] [--records N]\n                                                                   Summarize a decoded YAA stream without materializing file payloads\n  inspect-yaa-regions /path/to/decoded-yaa.bin [--start-offset N] [--records-per-region N] [--regions N]\n                                                                   Summarize consecutive regions of a decoded YAA stream\n  materialize-yaa-prefix /path/to/decoded-yaa.bin /path/to/output-root [--start-offset N] [--records N]\n                                                                   Reconstruct a small decoded YAA prefix into a filesystem tree\n  rebuild-image /path/to/AssetData-or-payloadv2 /path/to/output-root\n                                                                   Decode ordered payloadv2 shards and reconstruct the full filesystem tree\n  audit-rebuild /path/to/rebuilt-tree\n                                                                   Audit replay coverage, modes, symlinks, and xattr sidecar coverage\n  extract-sharedsupport /path/to/InstallAssistant.pkg /path/to/SharedSupport.dmg\n                                                                   Extract the SharedSupport.dmg member read-only from InstallAssistant.pkg\n  plan-installer [--release SELECTOR] [--efi PATH | --fetch-opencore] [--refresh-artifacts] /dev/sdX\n                                                                   Build a dry installer-media plan with a resolved EFI source\n  plan-system [--release SELECTOR] [--channel stable|beta|lab] [--refresh-artifacts] /dev/sdX\n                                                                   Build a dry full-system deployment plan"
     );
 }
 

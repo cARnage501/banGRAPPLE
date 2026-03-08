@@ -18,10 +18,12 @@ This keeps the UI thin, centralizes workflow coordination, and makes the system 
 ## Module Map
 
 - `src/main.rs`: command entry point and top-level argument handling
+- `src/assets.rs`: canonical resolution of payload-root, `AssetData`, and `payloadv2` roots
 - `src/catalog.rs`: release discovery interface, currently backed by curated placeholders
 - `src/downloader.rs`: installer download planning, cache paths, and future retry/checksum behavior
 - `src/bootloader.rs`: bootloader source resolution, pinned OpenCore policy, and EFI validation
 - `src/basesystem.rs`: read-only inspection of the separate BaseSystem patch, chunklist, and trust metadata path
+- `src/substrate.rs`: joined BaseSystem/runtime substrate inspection across stageable runtime, patch-backed BaseSystem, cryptex image patches, and optional manifest evidence
 - `src/disk.rs`: Linux block-device inspection, transport inference, and safety verdicts
 - `src/installer.rs`: BaseSystem and recovery layout planning for installer media
 - `src/image.rs`: golden-image metadata, distribution hints, and full-system deployment planning

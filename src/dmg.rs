@@ -3,6 +3,7 @@ use std::fmt;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use crate::assets::resolve_asset_roots;
 use walkdir::WalkDir;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -56,12 +57,13 @@ impl From<walkdir::Error> for RuntimeDiscoveryError {
 pub fn discover_runtime_assets(
     root: &Path,
 ) -> Result<RuntimeDiscoveryReport, RuntimeDiscoveryError> {
+    let resolved = resolve_asset_roots(root);
     let mut base_system_dmgs = Vec::new();
     let mut base_system_chunklists = Vec::new();
     let mut suramdisk_dmgs = Vec::new();
     let mut suramdisk_chunklists = Vec::new();
 
-    for entry in WalkDir::new(root) {
+    for entry in WalkDir::new(&resolved.asset_root) {
         let entry = entry?;
         let path = entry.path();
         if !path.is_file() {
@@ -214,6 +216,27 @@ mod tests {
         assert!(report.base_system_pair.is_none());
         assert_eq!(report.suramdisk_pairs.len(), 1);
         assert_eq!(report.suramdisk_pairs[0].basename, "x86_64SURamDisk");
+
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn discovers_stageable_runtime_under_nested_assetdata_root() {
+        let root = unique_path("runtime-nested");
+        fs::create_dir_all(root.join("payload-root/AssetData/boot")).unwrap();
+        fs::write(
+            root.join("payload-root/AssetData/boot/BaseSystem.dmg"),
+            vec![0u8; 16],
+        )
+        .unwrap();
+        fs::write(
+            root.join("payload-root/AssetData/boot/BaseSystem.chunklist"),
+            b"chunk",
+        )
+        .unwrap();
+
+        let report = discover_runtime_assets(&root.join("payload-root")).unwrap();
+        assert!(report.base_system_pair.is_some());
 
         fs::remove_dir_all(root).unwrap();
     }

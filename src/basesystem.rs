@@ -2,6 +2,8 @@ use std::fs;
 use std::io::{self, Read};
 use std::path::{Path, PathBuf};
 
+use crate::assets::resolve_asset_roots;
+
 const BXDIFF_MAGIC: &[u8; 8] = b"BXDIFF50";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -14,7 +16,9 @@ pub struct BaseSystemArtifact {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BaseSystemEvidenceReport {
+    pub input_root: PathBuf,
     pub asset_root: PathBuf,
+    pub payloadv2_root: PathBuf,
     pub x86_patch: BaseSystemArtifact,
     pub x86_patch_ecc: BaseSystemArtifact,
     pub arm64_patch: BaseSystemArtifact,
@@ -44,23 +48,26 @@ impl From<io::Error> for BaseSystemEvidenceError {
 pub fn inspect_base_system_evidence(
     asset_root: &Path,
 ) -> Result<BaseSystemEvidenceReport, BaseSystemEvidenceError> {
+    let resolved = resolve_asset_roots(asset_root);
     Ok(BaseSystemEvidenceReport {
-        asset_root: asset_root.to_path_buf(),
+        input_root: resolved.input_root,
+        asset_root: resolved.asset_root.clone(),
+        payloadv2_root: resolved.payloadv2_root,
         x86_patch: inspect_artifact(
-            asset_root,
+            &resolved.asset_root,
             "payloadv2/basesystem_patches/x86_64BaseSystem.dmg",
         )?,
         x86_patch_ecc: inspect_artifact(
-            asset_root,
+            &resolved.asset_root,
             "payloadv2/basesystem_patches/x86_64BaseSystem.dmg.ecc",
         )?,
         arm64_patch: inspect_artifact(
-            asset_root,
+            &resolved.asset_root,
             "payloadv2/basesystem_patches/arm64eBaseSystem.dmg",
         )?,
-        restore_chunklist: inspect_artifact(asset_root, "Restore/BaseSystem.chunklist")?,
+        restore_chunklist: inspect_artifact(&resolved.asset_root, "Restore/BaseSystem.chunklist")?,
         x86_trustcache: inspect_artifact(
-            asset_root,
+            &resolved.asset_root,
             "boot/Firmware/BaseSystem.dmg.x86.trustcache",
         )?,
     })
@@ -136,11 +143,38 @@ mod tests {
         .unwrap();
 
         let report = inspect_base_system_evidence(&root).unwrap();
+        assert_eq!(report.asset_root, root);
         assert!(report.x86_patch.exists);
         assert!(report.x86_patch.starts_with_bxdiff);
         assert!(report.arm64_patch.starts_with_bxdiff);
         assert!(report.restore_chunklist.exists);
         assert!(report.x86_trustcache.exists);
+
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn resolves_nested_assetdata_layout() {
+        let unique = format!(
+            "basesystem-evidence-nested-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        );
+        let root = std::env::temp_dir().join(unique);
+        let asset_root = root.join("payload-root/AssetData");
+        std::fs::create_dir_all(asset_root.join("payloadv2/basesystem_patches")).unwrap();
+        std::fs::write(
+            asset_root.join("payloadv2/basesystem_patches/x86_64BaseSystem.dmg"),
+            b"BXDIFF50patch",
+        )
+        .unwrap();
+
+        let report = inspect_base_system_evidence(&root.join("payload-root")).unwrap();
+        assert_eq!(report.asset_root, asset_root);
+        assert!(report.x86_patch.exists);
+        assert!(report.x86_patch.starts_with_bxdiff);
 
         let _ = std::fs::remove_dir_all(root);
     }
