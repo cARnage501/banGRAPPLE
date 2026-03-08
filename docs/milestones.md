@@ -196,3 +196,37 @@ This milestone does not yet prove:
 - final image reconstruction is complete
 - unresolved contract classes have explicit materialized producers
 - optional synthetic compatibility behavior has been designed or implemented
+
+## Milestone 6: Deterministic Native Audit Receipts
+
+The native rebuild audit now emits byte-for-byte deterministic JSON receipts for a fixed rebuilt tree.
+
+Implemented in this phase:
+
+- ordered path-set tracking for replay and actual tree coverage in `src/audit.rs`
+- sorted filesystem traversal before classification
+- sorted receipt and sample emission before writing audit outputs
+- regression coverage for deterministic repeated audit emission
+
+Verification:
+
+- `cargo test -- --nocapture`
+- observed result: `68` tests passed, `0` failed
+- determinism regression test passed:
+  - `audit_rebuild_emits_deterministic_receipts`
+- live double-run hash check on the clean workstation rebuild matched exactly for:
+  - `_ban_grapple_audit.json`
+  - `_ban_grapple_contract_receipts.json`
+  - `_ban_grapple_broken_symlink_receipts.json`
+
+This milestone proves:
+
+- repeated audit on the same rebuilt tree yields stable JSON bytes for the native audit and receipt outputs
+- the causal audit surface is now suitable for reliable diffing, reproducible evidence capture, and future CI expectations
+- receipt ordering and sample ordering are no longer dependent on filesystem iteration order or hash-set nondeterminism
+
+This milestone does not yet prove:
+
+- final image reconstruction is complete
+- unresolved contract classes have explicit materialized producers
+- optional synthetic compatibility behavior has been designed or implemented

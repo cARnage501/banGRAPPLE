@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::fs::{self, File};
 use std::io::{self, BufRead, BufReader};
@@ -261,7 +261,7 @@ pub fn audit_rebuild(root: &Path) -> Result<RebuildAuditReport, AuditError> {
     }
 
     let mut replay = ReplaySummary::default();
-    let mut replay_paths = HashSet::new();
+    let mut replay_paths = BTreeSet::new();
     let mut expected_modes = BTreeMap::new();
     let mut samples = AuditSamples::default();
 
@@ -319,7 +319,7 @@ pub fn audit_rebuild(root: &Path) -> Result<RebuildAuditReport, AuditError> {
     }
 
     let mut actual = ActualTreeSummary::default();
-    let mut actual_paths = HashSet::new();
+    let mut actual_paths = BTreeSet::new();
     let mut inaccessible_paths = 0u64;
     let mut bundle_contract_cache = BTreeMap::new();
     let mut bundle_executable_contract_missing_producers = 0u64;
@@ -395,6 +395,9 @@ pub fn audit_rebuild(root: &Path) -> Result<RebuildAuditReport, AuditError> {
     let report_path = root.join("_ban_grapple_audit.json");
     let contract_receipts_path = root.join("_ban_grapple_contract_receipts.json");
     let broken_symlink_receipts_path = root.join("_ban_grapple_broken_symlink_receipts.json");
+    sort_contract_receipts(&mut contract_receipts);
+    sort_broken_symlink_receipts(&mut broken_symlink_receipts);
+    sort_audit_samples(&mut samples);
     let contract_report = ContractReceiptsReport {
         bundle_executable_contract_missing_producers: contract_receipts,
     };
@@ -505,7 +508,7 @@ fn walk_actual_tree(
     current: &Path,
     expected_modes: &BTreeMap<String, u32>,
     actual: &mut ActualTreeSummary,
-    actual_paths: &mut HashSet<String>,
+    actual_paths: &mut BTreeSet<String>,
     inaccessible_paths: &mut u64,
     bundle_contract_cache: &mut BTreeMap<String, BundleContractInfo>,
     bundle_executable_contract_missing_producers: &mut u64,
@@ -514,7 +517,7 @@ fn walk_actual_tree(
     broken_symlink_receipts: &mut Vec<BrokenSymlinkReceipt>,
     samples: &mut AuditSamples,
 ) -> Result<(), AuditError> {
-    let entries = match fs::read_dir(current) {
+    let read_dir = match fs::read_dir(current) {
         Ok(entries) => entries,
         Err(err) if err.kind() == io::ErrorKind::PermissionDenied => {
             *inaccessible_paths += 1;
@@ -524,7 +527,8 @@ fn walk_actual_tree(
         Err(err) => return Err(AuditError::Io(err)),
     };
 
-    for entry in entries {
+    let mut entries = Vec::new();
+    for entry in read_dir {
         let entry = match entry {
             Ok(entry) => entry,
             Err(err) if err.kind() == io::ErrorKind::PermissionDenied => {
@@ -534,6 +538,11 @@ fn walk_actual_tree(
             }
             Err(err) => return Err(AuditError::Io(err)),
         };
+        entries.push(entry);
+    }
+    entries.sort_by(|left, right| left.path().cmp(&right.path()));
+
+    for entry in entries {
         let path = entry.path();
         let relative = path
             .strip_prefix(root)
@@ -902,6 +911,47 @@ fn record_inaccessible_sample(root: &Path, path: &Path, samples: &mut AuditSampl
         .display()
         .to_string();
     samples.inaccessible_paths.push(relative);
+}
+
+fn sort_contract_receipts(receipts: &mut [BundleExecutableContractSample]) {
+    receipts.sort_by(|left, right| {
+        left.path
+            .cmp(&right.path)
+            .then_with(|| left.bundle.cmp(&right.bundle))
+            .then_with(|| left.declared_executable.cmp(&right.declared_executable))
+    });
+}
+
+fn sort_broken_symlink_receipts(receipts: &mut [BrokenSymlinkReceipt]) {
+    receipts.sort_by(|left, right| {
+        left.path
+            .cmp(&right.path)
+            .then_with(|| left.target.cmp(&right.target))
+            .then_with(|| left.cause.cmp(&right.cause))
+            .then_with(|| left.bundle.cmp(&right.bundle))
+            .then_with(|| left.declared_executable.cmp(&right.declared_executable))
+    });
+}
+
+fn sort_mode_mismatch_samples(samples: &mut [ModeMismatchSample]) {
+    samples.sort_by(|left, right| {
+        left.path
+            .cmp(&right.path)
+            .then_with(|| left.expected.cmp(&right.expected))
+            .then_with(|| left.actual.cmp(&right.actual))
+    });
+}
+
+fn sort_audit_samples(samples: &mut AuditSamples) {
+    samples.missing_from_tree.sort();
+    samples.extra_in_tree.sort();
+    sort_mode_mismatch_samples(&mut samples.mode_mismatches);
+    sort_mode_mismatch_samples(&mut samples.mode_host_artifacts);
+    samples.broken_symlinks.sort();
+    sort_broken_symlink_receipts(&mut samples.broken_symlink_receipts);
+    sort_contract_receipts(&mut samples.bundle_executable_contract_missing_producers);
+    samples.inaccessible_paths.sort();
+    samples.xattr_sidecars_missing.sort();
 }
 
 #[cfg(test)]
@@ -1329,5 +1379,101 @@ mod tests {
             assert_eq!(receipt.cause, case.expected, "case {}", case.label);
             fs::remove_dir_all(root).expect("cleanup");
         }
+    }
+
+    #[test]
+    fn audit_rebuild_emits_deterministic_receipts() {
+        let root = temp_dir("audit-deterministic-receipts");
+        fs::create_dir_all(root.join("System/Library/Frameworks/Test.framework/Versions/A/Resources"))
+            .expect("framework dirs");
+        fs::create_dir_all(root.join("usr/share/locale")).expect("locale dir");
+        fs::create_dir_all(root.join("usr/share/locale/en_DK")).expect("locale leaf dir");
+        fs::create_dir_all(root.join("usr/share/firmware/wifi")).expect("firmware dir");
+
+        write_info_plist(
+            &root.join("System/Library/Frameworks/Test.framework/Versions/A/Resources/Info.plist"),
+            "Test",
+        );
+        symlink(
+            "A",
+            root.join("System/Library/Frameworks/Test.framework/Versions/Current"),
+        )
+        .expect("current symlink");
+        symlink(
+            "Versions/Current/Test",
+            root.join("System/Library/Frameworks/Test.framework/Test"),
+        )
+        .expect("framework symlink");
+        symlink(
+            "../da/LC_TIME",
+            root.join("usr/share/locale/en_DK/LC_TIME"),
+        )
+        .expect("locale symlink");
+        symlink(
+            "P-main.txt",
+            root.join("usr/share/firmware/wifi/P-alias.txt"),
+        )
+        .expect("firmware symlink");
+
+        fs::write(
+            root.join("_yaa_materialized.jsonl"),
+            concat!(
+                r#"{"path":"System","object_type":"directory","mode":493,"uid":0,"gid":0,"payloads":[]}"#,
+                "\n",
+                r#"{"path":"System/Library","object_type":"directory","mode":493,"uid":0,"gid":0,"payloads":[]}"#,
+                "\n",
+                r#"{"path":"System/Library/Frameworks","object_type":"directory","mode":493,"uid":0,"gid":0,"payloads":[]}"#,
+                "\n",
+                r#"{"path":"System/Library/Frameworks/Test.framework","object_type":"directory","mode":493,"uid":0,"gid":0,"payloads":[]}"#,
+                "\n",
+                r#"{"path":"System/Library/Frameworks/Test.framework/Versions","object_type":"directory","mode":493,"uid":0,"gid":0,"payloads":[]}"#,
+                "\n",
+                r#"{"path":"System/Library/Frameworks/Test.framework/Versions/A","object_type":"directory","mode":493,"uid":0,"gid":0,"payloads":[]}"#,
+                "\n",
+                r#"{"path":"System/Library/Frameworks/Test.framework/Versions/A/Resources","object_type":"directory","mode":493,"uid":0,"gid":0,"payloads":[]}"#,
+                "\n",
+                r#"{"path":"System/Library/Frameworks/Test.framework/Versions/A/Resources/Info.plist","object_type":"file","mode":420,"uid":0,"gid":0,"payloads":[]}"#,
+                "\n",
+                r#"{"path":"System/Library/Frameworks/Test.framework/Versions/Current","object_type":"link","mode":511,"uid":0,"gid":0,"payloads":[]}"#,
+                "\n",
+                r#"{"path":"System/Library/Frameworks/Test.framework/Test","object_type":"link","mode":511,"uid":0,"gid":0,"payloads":[]}"#,
+                "\n",
+                r#"{"path":"usr","object_type":"directory","mode":493,"uid":0,"gid":0,"payloads":[]}"#,
+                "\n",
+                r#"{"path":"usr/share","object_type":"directory","mode":493,"uid":0,"gid":0,"payloads":[]}"#,
+                "\n",
+                r#"{"path":"usr/share/locale","object_type":"directory","mode":493,"uid":0,"gid":0,"payloads":[]}"#,
+                "\n",
+                r#"{"path":"usr/share/locale/en_DK/LC_TIME","object_type":"link","mode":511,"uid":0,"gid":0,"payloads":[]}"#,
+                "\n",
+                r#"{"path":"usr/share/firmware","object_type":"directory","mode":493,"uid":0,"gid":0,"payloads":[]}"#,
+                "\n",
+                r#"{"path":"usr/share/firmware/wifi","object_type":"directory","mode":493,"uid":0,"gid":0,"payloads":[]}"#,
+                "\n",
+                r#"{"path":"usr/share/firmware/wifi/P-alias.txt","object_type":"link","mode":511,"uid":0,"gid":0,"payloads":[]}"#,
+                "\n"
+            ),
+        )
+        .expect("metadata");
+
+        let first = audit_rebuild(&root).expect("first audit should succeed");
+        let first_report = fs::read(&first.report_path).expect("first report bytes");
+        let first_contracts =
+            fs::read(&first.contract_receipts_path).expect("first contract receipt bytes");
+        let first_broken = fs::read(&first.broken_symlink_receipts_path)
+            .expect("first broken symlink receipt bytes");
+
+        let second = audit_rebuild(&root).expect("second audit should succeed");
+        let second_report = fs::read(&second.report_path).expect("second report bytes");
+        let second_contracts =
+            fs::read(&second.contract_receipts_path).expect("second contract receipt bytes");
+        let second_broken = fs::read(&second.broken_symlink_receipts_path)
+            .expect("second broken symlink receipt bytes");
+
+        assert_eq!(first_report, second_report);
+        assert_eq!(first_contracts, second_contracts);
+        assert_eq!(first_broken, second_broken);
+
+        fs::remove_dir_all(root).expect("cleanup");
     }
 }
