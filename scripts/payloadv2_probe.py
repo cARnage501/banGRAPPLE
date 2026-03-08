@@ -47,6 +47,12 @@ SYNTACTICALLY_PARSED_TAGS = {
     "AFR1",
     "AFR2",
     "AFR4",
+    "HLC1",
+    "HLC2",
+    "HLC4",
+    "HLO1",
+    "HLO2",
+    "HLO4",
     "FLG1",
     "FLG2",
     "FLG4",
@@ -66,6 +72,8 @@ KNOWN_TAG_FAMILIES = {
     "FLI",
     "AFT",
     "AFR",
+    "HLC",
+    "HLO",
     "MTM",
     "DAT",
     "XAT",
@@ -867,21 +875,21 @@ def parse_yaa_records(data: bytes, limit: int, start_offset: int = 0) -> list[di
                 else:
                     record["flags"] = value
                 record["fields"].append({"tag": tag, "value": value})
-            elif tag in {"AFT1", "AFR1"}:
+            elif tag in {"AFT1", "AFR1", "HLC1", "HLO1"}:
                 if cursor + 1 > metadata_end:
                     parse_error = f"truncated_{tag.lower()}"
                     break
                 value = data[cursor]
                 cursor += 1
                 record["fields"].append({"tag": tag, "value": value})
-            elif tag in {"AFT2", "AFR2"}:
+            elif tag in {"AFT2", "AFR2", "HLC2", "HLO2"}:
                 if cursor + 2 > metadata_end:
                     parse_error = f"truncated_{tag.lower()}"
                     break
                 value = read_u16le(data, cursor)
                 cursor += 2
                 record["fields"].append({"tag": tag, "value": value})
-            elif tag in {"AFT4", "AFR4"}:
+            elif tag in {"AFT4", "AFR4", "HLC4", "HLO4"}:
                 if cursor + 4 > metadata_end:
                     parse_error = f"truncated_{tag.lower()}"
                     break
@@ -1116,21 +1124,21 @@ def parse_yaa_records_stream(
                 else:
                     record["flags"] = value
                 record["fields"].append({"tag": tag, "value": value})
-            elif tag in {"AFT1", "AFR1"}:
+            elif tag in {"AFT1", "AFR1", "HLC1", "HLO1"}:
                 if cursor + 1 > metadata_end:
                     parse_error = f"truncated_{tag.lower()}"
                     break
                 value = metadata_bytes[cursor]
                 cursor += 1
                 record["fields"].append({"tag": tag, "value": value})
-            elif tag in {"AFT2", "AFR2"}:
+            elif tag in {"AFT2", "AFR2", "HLC2", "HLO2"}:
                 if cursor + 2 > metadata_end:
                     parse_error = f"truncated_{tag.lower()}"
                     break
                 value = read_u16le(metadata_bytes, cursor)
                 cursor += 2
                 record["fields"].append({"tag": tag, "value": value})
-            elif tag in {"AFT4", "AFR4"}:
+            elif tag in {"AFT4", "AFR4", "HLC4", "HLO4"}:
                 if cursor + 4 > metadata_end:
                     parse_error = f"truncated_{tag.lower()}"
                     break

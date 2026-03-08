@@ -34,6 +34,12 @@ pub enum YaaTag {
     AccessReference8,
     AccessReference16,
     AccessReference32,
+    HardlinkClass8,
+    HardlinkClass16,
+    HardlinkClass32,
+    HardlinkOrder8,
+    HardlinkOrder16,
+    HardlinkOrder32,
     ModifiedTimeSeconds,
     ModifiedTimeTimespec,
     Data,
@@ -75,6 +81,8 @@ pub enum YaaField {
     InlineFlags(u32),
     AccessFlags(u32),
     AccessReference(u32),
+    HardlinkClass(u32),
+    HardlinkOrder(u32),
     ModifiedTime(YaaTimespec),
     ExternalDescriptor(YaaExternalPayload),
     XattrDescriptor { length: u64 },
@@ -435,6 +443,18 @@ fn parse_record_with_base(
                 let value = read_width_uint(data, cursor, width, tag_offset, "AFR payload")?;
                 cursor += width;
                 record.fields.push(YaaField::AccessReference(value));
+            }
+            YaaTag::HardlinkClass8 | YaaTag::HardlinkClass16 | YaaTag::HardlinkClass32 => {
+                let width = integer_width(&tag);
+                let value = read_width_uint(data, cursor, width, tag_offset, "HLC payload")?;
+                cursor += width;
+                record.fields.push(YaaField::HardlinkClass(value));
+            }
+            YaaTag::HardlinkOrder8 | YaaTag::HardlinkOrder16 | YaaTag::HardlinkOrder32 => {
+                let width = integer_width(&tag);
+                let value = read_width_uint(data, cursor, width, tag_offset, "HLO payload")?;
+                cursor += width;
+                record.fields.push(YaaField::HardlinkOrder(value));
             }
             YaaTag::ModifiedTimeSeconds => {
                 let seconds = read_u64le(data, cursor, tag_offset, "MTMS payload")?;
@@ -895,18 +915,24 @@ fn integer_width(tag: &YaaTag) -> usize {
         | YaaTag::Gid8
         | YaaTag::Flags8
         | YaaTag::AccessFlags8
-        | YaaTag::AccessReference8 => 1,
+        | YaaTag::AccessReference8
+        | YaaTag::HardlinkClass8
+        | YaaTag::HardlinkOrder8 => 1,
         YaaTag::Uid16
         | YaaTag::Gid16
         | YaaTag::Flags16
         | YaaTag::AccessFlags16
-        | YaaTag::AccessReference16 => 2,
+        | YaaTag::AccessReference16
+        | YaaTag::HardlinkClass16
+        | YaaTag::HardlinkOrder16 => 2,
         YaaTag::Uid32
         | YaaTag::Gid32
         | YaaTag::Flags32
         | YaaTag::InlineFlags32
         | YaaTag::AccessFlags32
         | YaaTag::AccessReference32
+        | YaaTag::HardlinkClass32
+        | YaaTag::HardlinkOrder32
         | YaaTag::DataBig => 4,
         _ => 0,
     }
@@ -934,6 +960,12 @@ fn decode_tag(tag: [u8; 4]) -> YaaTag {
         b"AFR1" => YaaTag::AccessReference8,
         b"AFR2" => YaaTag::AccessReference16,
         b"AFR4" => YaaTag::AccessReference32,
+        b"HLC1" => YaaTag::HardlinkClass8,
+        b"HLC2" => YaaTag::HardlinkClass16,
+        b"HLC4" => YaaTag::HardlinkClass32,
+        b"HLO1" => YaaTag::HardlinkOrder8,
+        b"HLO2" => YaaTag::HardlinkOrder16,
+        b"HLO4" => YaaTag::HardlinkOrder32,
         b"MTMS" => YaaTag::ModifiedTimeSeconds,
         b"MTMT" => YaaTag::ModifiedTimeTimespec,
         b"DATA" => YaaTag::Data,
@@ -965,6 +997,12 @@ fn tag_label(tag: &YaaTag) -> String {
         YaaTag::AccessReference8 => "AFR1",
         YaaTag::AccessReference16 => "AFR2",
         YaaTag::AccessReference32 => "AFR4",
+        YaaTag::HardlinkClass8 => "HLC1",
+        YaaTag::HardlinkClass16 => "HLC2",
+        YaaTag::HardlinkClass32 => "HLC4",
+        YaaTag::HardlinkOrder8 => "HLO1",
+        YaaTag::HardlinkOrder16 => "HLO2",
+        YaaTag::HardlinkOrder32 => "HLO4",
         YaaTag::ModifiedTimeSeconds => "MTMS",
         YaaTag::ModifiedTimeTimespec => "MTMT",
         YaaTag::Data => "DATA",
@@ -1051,11 +1089,24 @@ fn apply_deferred_directory_modes(
     result: &mut YaaMaterializationResult,
 ) -> Result<(), YaaStreamError> {
     for update in deferred_directory_modes.iter().rev() {
-        let permissions = fs::Permissions::from_mode(u32::from(update.mode));
+        let permissions =
+            fs::Permissions::from_mode(normalize_directory_mode_for_linux(update.mode));
         fs::set_permissions(&update.path, permissions)?;
         result.mode_updates_applied += 1;
     }
     Ok(())
+}
+
+fn normalize_directory_mode_for_linux(mode: u16) -> u32 {
+    let mode = u32::from(mode);
+    let owner_has_read_or_write = mode & 0o600 != 0;
+    let owner_has_traverse = mode & 0o100 != 0;
+
+    if owner_has_read_or_write && !owner_has_traverse {
+        mode | 0o100
+    } else {
+        mode
+    }
 }
 
 fn apply_modified_time_if_present(
@@ -1418,13 +1469,14 @@ mod tests {
     }
 
     fn build_directory_record(path: &str, uid_tag: &[u8; 4], uid: u32) -> Vec<u8> {
-        build_directory_record_with_timestamp(path, uid_tag, uid, 123, None)
+        build_directory_record_with_metadata(path, uid_tag, uid, 0o755, 123, None)
     }
 
-    fn build_directory_record_with_timestamp(
+    fn build_directory_record_with_metadata(
         path: &str,
         uid_tag: &[u8; 4],
         uid: u32,
+        mode: u16,
         seconds: u64,
         nanos: Option<u32>,
     ) -> Vec<u8> {
@@ -1444,7 +1496,7 @@ mod tests {
         push_tag(&mut metadata, b"GID1");
         metadata.push(0);
         push_tag(&mut metadata, b"MOD2");
-        metadata.extend_from_slice(&0o755u16.to_le_bytes());
+        metadata.extend_from_slice(&mode.to_le_bytes());
         push_tag(&mut metadata, b"FLG1");
         metadata.push(0);
         match nanos {
@@ -1530,6 +1582,45 @@ mod tests {
         record
     }
 
+    fn build_file_record_with_extended_fields(
+        path: &str,
+        payload: &[u8],
+        hardlink_class: u16,
+        hardlink_order: u8,
+    ) -> Vec<u8> {
+        let mut metadata = Vec::new();
+        push_tag(&mut metadata, b"TYP1");
+        metadata.push(b'F');
+        push_tag(&mut metadata, b"PATP");
+        metadata.extend_from_slice(&(path.len() as u16).to_le_bytes());
+        metadata.extend_from_slice(path.as_bytes());
+        push_tag(&mut metadata, b"UID1");
+        metadata.push(0);
+        push_tag(&mut metadata, b"GID1");
+        metadata.push(0);
+        push_tag(&mut metadata, b"MOD2");
+        metadata.extend_from_slice(&0o644u16.to_le_bytes());
+        push_tag(&mut metadata, b"FLG4");
+        metadata.extend_from_slice(&524288u32.to_le_bytes());
+        push_tag(&mut metadata, b"HLC2");
+        metadata.extend_from_slice(&hardlink_class.to_le_bytes());
+        push_tag(&mut metadata, b"HLO1");
+        metadata.push(hardlink_order);
+        push_tag(&mut metadata, b"AFT1");
+        metadata.push(8);
+        push_tag(&mut metadata, b"AFR2");
+        metadata.extend_from_slice(&hardlink_class.to_le_bytes());
+        push_tag(&mut metadata, b"DATA");
+        metadata.extend_from_slice(&(payload.len() as u16).to_le_bytes());
+
+        let mut record = Vec::new();
+        record.extend_from_slice(b"YAA1");
+        record.extend_from_slice(&((metadata.len() + 6) as u16).to_le_bytes());
+        record.extend_from_slice(&metadata);
+        record.extend_from_slice(payload);
+        record
+    }
+
     fn build_link_record(path: &str, target: &str) -> Vec<u8> {
         let mut metadata = Vec::new();
         push_tag(&mut metadata, b"TYP1");
@@ -1584,6 +1675,33 @@ mod tests {
                 .iter()
                 .any(|field| matches!(field, YaaField::InlineFlags(131072)))
         );
+    }
+
+    #[test]
+    fn parses_hlc_and_hlo_fields() {
+        let bytes = build_file_record_with_extended_fields(
+            "System/Applications/App Store.app/Contents/PkgInfo",
+            b"APPL",
+            0x1234,
+            3,
+        );
+        let record = parse_record(&bytes, 0).unwrap().unwrap();
+
+        assert_eq!(record.object_type, Some(YaaObjectType::File));
+        assert_eq!(
+            record.path.as_deref(),
+            Some("System/Applications/App Store.app/Contents/PkgInfo")
+        );
+        assert!(record
+            .fields
+            .iter()
+            .any(|field| matches!(field, YaaField::HardlinkClass(0x1234))));
+        assert!(record
+            .fields
+            .iter()
+            .any(|field| matches!(field, YaaField::HardlinkOrder(3))));
+        assert!(record.tags.contains(&YaaTag::HardlinkClass16));
+        assert!(record.tags.contains(&YaaTag::HardlinkOrder8));
     }
 
     #[test]
@@ -1787,6 +1905,28 @@ mod tests {
         assert_eq!(metadata.mtime(), 789);
         assert_eq!(metadata.mtime_nsec(), 123_456_789);
         assert_eq!(result.timestamp_updates_applied, 1);
+
+        let _ = fs::remove_dir_all(output_root);
+    }
+
+    #[test]
+    fn materialize_prefix_keeps_linux_directories_traversable() {
+        let first =
+            build_directory_record_with_metadata("System/secure", b"UID1", 0, 0o600, 123, None);
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let output_root =
+            std::env::temp_dir().join(format!("yaa-materialize-dir-modes-{unique}"));
+
+        let mut reader = YaaStreamReader::new(Cursor::new(first));
+        reader.materialize_prefix(&output_root, 10).unwrap();
+
+        assert_eq!(
+            fs::metadata(output_root.join("System/secure")).unwrap().mode() & 0o7777,
+            0o700
+        );
 
         let _ = fs::remove_dir_all(output_root);
     }

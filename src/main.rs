@@ -338,12 +338,14 @@ fn audit_rebuild_command(args: &[String]) -> Result<(), String> {
         report.replay.xattr_sidecars_referenced
     );
     println!(
-        "Path coverage: replay_paths={} actual_paths={} missing_from_tree={} extra_in_tree={} mode_mismatches={}",
+        "Path coverage: replay_paths={} actual_paths={} missing_from_tree={} extra_in_tree={} mode_mismatches={} mode_host_artifacts={} bundle_executable_contract_missing_producers={}",
         report.coverage.replay_paths,
         report.coverage.actual_paths,
         report.coverage.missing_from_tree,
         report.coverage.extra_in_tree,
-        report.coverage.mode_mismatches
+        report.coverage.mode_mismatches,
+        report.coverage.mode_host_artifacts,
+        report.coverage.bundle_executable_contract_missing_producers
     );
 
     if !report.samples.missing_from_tree.is_empty() {
@@ -367,10 +369,32 @@ fn audit_rebuild_command(args: &[String]) -> Result<(), String> {
             );
         }
     }
+    if !report.samples.mode_host_artifacts.is_empty() {
+        println!("Sample mode host artifacts:");
+        for sample in &report.samples.mode_host_artifacts {
+            println!(
+                "  {} expected {:o} actual {:o}",
+                sample.path, sample.expected, sample.actual
+            );
+        }
+    }
     if !report.samples.broken_symlinks.is_empty() {
         println!("Sample broken symlinks:");
         for path in &report.samples.broken_symlinks {
             println!("  {path}");
+        }
+    }
+    if !report
+        .samples
+        .bundle_executable_contract_missing_producers
+        .is_empty()
+    {
+        println!("Sample bundle executable contract gaps:");
+        for sample in &report.samples.bundle_executable_contract_missing_producers {
+            println!(
+                "  {} bundle={} declared_executable={}",
+                sample.path, sample.bundle, sample.declared_executable
+            );
         }
     }
     if !report.samples.xattr_sidecars_missing.is_empty() {
