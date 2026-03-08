@@ -96,5 +96,35 @@ pub fn render_plan(plan: &ExecutionPlan) -> String {
         }
     }
 
+    out.push_str("\nRuntime Substrate\n-----------------\n");
+    out.push_str(&format!("required: {}\n", plan.substrate.required));
+    match plan.substrate.inspected_kind {
+        Some(kind) => {
+            out.push_str(&format!("inspected kind: {}\n", kind.label()));
+            if let Some(root) = plan.substrate.inspected_root.as_ref() {
+                out.push_str(&format!("inspected root: {}\n", root.display()));
+            }
+            out.push_str(&format!(
+                "stageable BaseSystem: {}\n",
+                plan.substrate.stageable_base_system_present
+            ));
+            out.push_str(&format!(
+                "BaseSystem patches: x86={} arm64e={}\n",
+                plan.substrate.basesystem_x86_patch_present,
+                plan.substrate.basesystem_arm64_patch_present
+            ));
+            out.push_str(&format!(
+                "cryptex image patches: {}\n",
+                plan.substrate.cryptex_image_patch_count
+            ));
+            out.push_str(&format!("SURamDisk candidates: {}\n", plan.substrate.suramdisk_count));
+        }
+        None => out.push_str("inspected kind: not inspected\n"),
+    }
+    out.push_str("obligations:\n");
+    for obligation in &plan.substrate.obligations {
+        out.push_str(&format!("- {}\n", obligation));
+    }
+
     out
 }

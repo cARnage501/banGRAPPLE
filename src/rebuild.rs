@@ -7,8 +7,8 @@ use xz2::read::XzDecoder;
 
 use crate::yaa::{YaaMaterializationResult, YaaStreamReader};
 
-const PBZX_MAGIC: &[u8; 4] = b"pbzx";
-const XZ_MAGIC: &[u8; 6] = b"\xfd7zXZ\x00";
+pub(crate) const PBZX_MAGIC: &[u8; 4] = b"pbzx";
+pub(crate) const XZ_MAGIC: &[u8; 6] = b"\xfd7zXZ\x00";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PayloadChunk {
@@ -202,13 +202,16 @@ fn decode_payload_stream(
     Ok(decoded_shards)
 }
 
-fn decode_pbzx_bytes(data: &[u8]) -> Result<Vec<u8>, RebuildError> {
+pub(crate) fn decode_pbzx_bytes(data: &[u8]) -> Result<Vec<u8>, RebuildError> {
     let mut decoded = Vec::new();
     decode_pbzx_to_writer(data, &mut decoded)?;
     Ok(decoded)
 }
 
-fn decode_pbzx_to_writer(data: &[u8], out: &mut impl Write) -> Result<u64, RebuildError> {
+pub(crate) fn decode_pbzx_to_writer(
+    data: &[u8],
+    out: &mut impl Write,
+) -> Result<u64, RebuildError> {
     if !data.starts_with(PBZX_MAGIC) {
         return Err(RebuildError::Parse(
             "payload shard does not start with pbzx".to_string(),

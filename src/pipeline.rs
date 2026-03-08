@@ -7,6 +7,8 @@ use crate::image::{
     build_system_image_plan_with_channel,
 };
 use crate::installer::{InstallerLayout, build_installer_layout};
+use crate::substrate::{RuntimeSubstrateKind, inspect_runtime_substrate};
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WorkflowMode {
@@ -75,12 +77,27 @@ pub enum DeploymentPlan {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RuntimeSubstratePlan {
+    pub required: bool,
+    pub obligations: Vec<&'static str>,
+    pub inspected_root: Option<PathBuf>,
+    pub metadata_root: Option<PathBuf>,
+    pub inspected_kind: Option<RuntimeSubstrateKind>,
+    pub stageable_base_system_present: bool,
+    pub basesystem_x86_patch_present: bool,
+    pub basesystem_arm64_patch_present: bool,
+    pub cryptex_image_patch_count: usize,
+    pub suramdisk_count: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExecutionPlan {
     pub mode: WorkflowMode,
     pub release: InstallerRelease,
     pub disk: DiskDevice,
     pub artifacts: ArtifactPlan,
     pub deployment: DeploymentPlan,
+    pub substrate: RuntimeSubstratePlan,
     pub stages: Vec<Stage>,
 }
 
@@ -97,6 +114,24 @@ pub fn build_installer_with_options(
     disk: DiskDevice,
     refresh_artifacts: bool,
     bootloader: ResolvedBootloader,
+) -> Result<ExecutionPlan, String> {
+    build_installer_with_substrate_options(
+        release,
+        disk,
+        refresh_artifacts,
+        bootloader,
+        None,
+        None,
+    )
+}
+
+pub fn build_installer_with_substrate_options(
+    release: InstallerRelease,
+    disk: DiskDevice,
+    refresh_artifacts: bool,
+    bootloader: ResolvedBootloader,
+    asset_root: Option<&Path>,
+    metadata_root: Option<&Path>,
 ) -> Result<ExecutionPlan, String> {
     validate_disk(&disk)?;
 
@@ -118,6 +153,11 @@ pub fn build_installer_with_options(
             &disk,
             &bootloader,
         )),
+        substrate: build_runtime_substrate_plan(
+            WorkflowMode::InstallerMedia,
+            asset_root,
+            metadata_root,
+        )?,
         release,
         disk,
         stages: vec![
@@ -145,6 +185,17 @@ pub fn deploy_system_with_options(
     refresh_artifacts: bool,
     channel: ImageChannel,
 ) -> Result<ExecutionPlan, String> {
+    deploy_system_with_substrate_options(release, disk, refresh_artifacts, channel, None, None)
+}
+
+pub fn deploy_system_with_substrate_options(
+    release: InstallerRelease,
+    disk: DiskDevice,
+    refresh_artifacts: bool,
+    channel: ImageChannel,
+    asset_root: Option<&Path>,
+    metadata_root: Option<&Path>,
+) -> Result<ExecutionPlan, String> {
     validate_disk(&disk)?;
 
     let image_plan = build_system_image_plan_with_channel(&release, channel);
@@ -164,6 +215,7 @@ pub fn deploy_system_with_options(
         mode: WorkflowMode::FullSystem,
         artifacts,
         deployment: DeploymentPlan::FullSystem(build_system_deployment_plan(&release, &disk)),
+        substrate: build_runtime_substrate_plan(WorkflowMode::FullSystem, asset_root, metadata_root)?,
         release,
         disk,
         stages: vec![
@@ -192,6 +244,60 @@ fn validate_disk(disk: &DiskDevice) -> Result<(), String> {
     }
 }
 
+fn build_runtime_substrate_plan(
+    mode: WorkflowMode,
+    asset_root: Option<&Path>,
+    metadata_root: Option<&Path>,
+) -> Result<RuntimeSubstratePlan, String> {
+    let obligations = match mode {
+        WorkflowMode::InstallerMedia => vec![
+            "BaseSystem substrate must be available as a stageable runtime or patch-backed synthesis path",
+            "recovery runtime assets must be joined deliberately before deployment",
+            "cryptex/runtime patch layers may be required to satisfy installer substrate fidelity",
+        ],
+        WorkflowMode::FullSystem => vec![
+            "cryptex image patch composition must be accounted for in the final image law",
+            "BaseSystem/runtime substrate must be preserved for recovery and preboot topology",
+            "paired-volume and runtime substrate expectations must remain explicit during deployment",
+        ],
+    };
+
+    let Some(asset_root) = asset_root else {
+        return Ok(RuntimeSubstratePlan {
+            required: true,
+            obligations,
+            inspected_root: None,
+            metadata_root: metadata_root.map(Path::to_path_buf),
+            inspected_kind: None,
+            stageable_base_system_present: false,
+            basesystem_x86_patch_present: false,
+            basesystem_arm64_patch_present: false,
+            cryptex_image_patch_count: 0,
+            suramdisk_count: 0,
+        });
+    };
+
+    let report = inspect_runtime_substrate(asset_root, metadata_root).map_err(|err| {
+        format!(
+            "failed to inspect runtime substrate at '{}': {err}",
+            asset_root.display()
+        )
+    })?;
+
+    Ok(RuntimeSubstratePlan {
+        required: true,
+        obligations,
+        inspected_root: Some(report.input_root),
+        metadata_root: metadata_root.map(Path::to_path_buf),
+        inspected_kind: Some(report.substrate_kind),
+        stageable_base_system_present: report.runtime_assets.base_system_pair.is_some(),
+        basesystem_x86_patch_present: report.base_system_evidence.x86_patch.exists,
+        basesystem_arm64_patch_present: report.base_system_evidence.arm64_patch.exists,
+        cryptex_image_patch_count: report.image_patches.len(),
+        suramdisk_count: report.runtime_assets.suramdisk_pairs.len(),
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use std::fs;
@@ -203,10 +309,12 @@ mod tests {
     use crate::disk::{DiskDevice, Transport};
     use crate::downloader::ResolvedImage;
     use crate::image::{ImageChannel, build_system_image_plan_with_channel};
+    use crate::substrate::RuntimeSubstrateKind;
+    use std::path::Path;
 
     use super::{
         ArtifactPlan, DeploymentPlan, Stage, WorkflowMode, build_installer,
-        deploy_system_with_options,
+        build_installer_with_substrate_options, deploy_system_with_options,
     };
 
     fn sample_release() -> InstallerRelease {
@@ -252,6 +360,8 @@ mod tests {
         assert_eq!(plan.stages.last(), Some(&Stage::Finalize));
         assert!(matches!(plan.artifacts, ArtifactPlan::InstallerPackages(_)));
         assert!(matches!(plan.deployment, DeploymentPlan::InstallerMedia(_)));
+        assert!(plan.substrate.required);
+        assert!(plan.substrate.inspected_kind.is_none());
     }
 
     #[test]
@@ -297,6 +407,12 @@ mod tests {
                 &release,
                 &sample_disk(),
             )),
+            substrate: super::build_runtime_substrate_plan(
+                WorkflowMode::FullSystem,
+                None,
+                None,
+            )
+            .expect("substrate plan"),
             stages: vec![
                 Stage::QueryCatalog,
                 Stage::DiscoverInstaller,
@@ -315,6 +431,7 @@ mod tests {
         assert!(plan.stages.contains(&Stage::WriteSystemImage));
         assert!(matches!(plan.artifacts, ArtifactPlan::ManagedImage(_)));
         assert!(matches!(plan.deployment, DeploymentPlan::FullSystem(_)));
+        assert!(plan.substrate.required);
 
         fs::remove_dir_all(temp_dir).expect("temp dir removed");
     }
@@ -325,5 +442,98 @@ mod tests {
         let disk = sample_disk();
         let result = deploy_system_with_options(release, disk, false, ImageChannel::Beta);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn installer_plan_can_attach_patch_backed_substrate_evidence() {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("time works")
+            .as_nanos();
+        let temp_dir = std::env::temp_dir().join(format!("ban-grapple-pipeline-substrate-{unique}"));
+        let asset_root = temp_dir.join("payload-root/AssetData");
+        fs::create_dir_all(asset_root.join("payloadv2/basesystem_patches")).expect("patch dir");
+        fs::create_dir_all(asset_root.join("payloadv2/image_patches")).expect("image patch dir");
+        fs::write(
+            asset_root.join("payloadv2/basesystem_patches/x86_64BaseSystem.dmg"),
+            b"BXDIFF50patch",
+        )
+        .expect("x86 patch");
+        fs::write(
+            asset_root.join("payloadv2/image_patches/cryptex-app"),
+            b"RIDIFF10patch",
+        )
+        .expect("cryptex patch");
+
+        let plan = build_installer_with_substrate_options(
+            sample_release(),
+            sample_disk(),
+            false,
+            sample_bootloader(),
+            Some(temp_dir.join("payload-root").as_path()),
+            None,
+        )
+        .expect("plan should build");
+
+        assert_eq!(
+            plan.substrate.inspected_kind,
+            Some(RuntimeSubstrateKind::PatchBackedBaseSystem)
+        );
+        assert!(plan.substrate.basesystem_x86_patch_present);
+        assert_eq!(plan.substrate.cryptex_image_patch_count, 1);
+
+        fs::remove_dir_all(temp_dir).expect("temp dir removed");
+    }
+
+    #[test]
+    fn full_system_plan_can_attach_stageable_substrate_evidence() {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("time works")
+            .as_nanos();
+        let temp_dir = std::env::temp_dir().join(format!("ban-grapple-pipeline-stageable-{unique}"));
+        let asset_root = temp_dir.join("AssetData");
+        fs::create_dir_all(asset_root.join("boot")).expect("boot dir");
+        fs::write(asset_root.join("boot/BaseSystem.dmg"), vec![0u8; 16]).expect("dmg");
+        fs::write(asset_root.join("boot/BaseSystem.chunklist"), b"chunk").expect("chunklist");
+        let plan = super::ExecutionPlan {
+            mode: WorkflowMode::FullSystem,
+            release: sample_release(),
+            disk: sample_disk(),
+            artifacts: ArtifactPlan::ManagedImage(Box::new(ResolvedImage {
+                channel: ImageChannel::Stable,
+                descriptor: crate::image::ImageDescriptor {
+                    release: crate::image::manifest_release_from_installer(&sample_release()),
+                    manifest_path: "manifest.json".to_string(),
+                    image_name: Some("sample.img.zst".to_string()),
+                    published_at: None,
+                },
+                manifest: crate::image::parse_manifest_str(
+                    include_str!("../tests/fixtures/sample_image_manifest.json"),
+                )
+                .expect("manifest parses"),
+                cache_dir: temp_dir.join("cache"),
+                image_path: temp_dir.join("sample.img.zst"),
+            })),
+            deployment: DeploymentPlan::FullSystem(crate::image::build_system_deployment_plan(
+                &sample_release(),
+                &sample_disk(),
+            )),
+            substrate: super::build_runtime_substrate_plan(
+                WorkflowMode::FullSystem,
+                Some(Path::new(&asset_root)),
+                None,
+            )
+            .expect("substrate plan"),
+            stages: vec![Stage::AcquireSystemImage, Stage::WriteSystemImage, Stage::Finalize],
+        };
+
+        assert_eq!(
+            plan.substrate.inspected_kind,
+            Some(RuntimeSubstrateKind::StageableBaseSystem)
+        );
+        assert!(plan.substrate.stageable_base_system_present);
+
+        fs::remove_dir_all(temp_dir).expect("temp dir removed");
     }
 }

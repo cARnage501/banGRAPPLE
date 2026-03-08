@@ -2,7 +2,7 @@ use std::env;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::{self, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process;
 
 use ban_grapple::audit::audit_rebuild;
@@ -11,11 +11,14 @@ use ban_grapple::bootloader::{
     BootloaderSource, default_bootloader_source, parse_bootloader_source, resolve_bootloader,
 };
 use ban_grapple::catalog::{InstallerRelease, fetch_releases, refresh_releases};
+use ban_grapple::compose::{ComposeOptions, compose_image_artifact};
 use ban_grapple::disk::{DiskDevice, SafetyVerdict, discover_disks};
 use ban_grapple::image::ImageChannel;
 use ban_grapple::manifest::inspect_runtime_manifest;
+use ban_grapple::patch::{decode_patch_layer, inspect_patch_layer};
 use ban_grapple::pipeline::{
-    WorkflowMode, build_installer_with_options, deploy_system_with_options,
+    WorkflowMode, build_installer_with_substrate_options, build_installer_with_options,
+    deploy_system_with_options, deploy_system_with_substrate_options,
 };
 use ban_grapple::rebuild::rebuild_image;
 use ban_grapple::substrate::{RuntimeSubstrateKind, inspect_runtime_substrate};
@@ -57,8 +60,11 @@ fn run() -> Result<(), String> {
         Some("inspect-yaa") => inspect_yaa(&args),
         Some("inspect-yaa-regions") => inspect_yaa_regions(&args),
         Some("materialize-yaa-prefix") => materialize_yaa_prefix(&args),
+        Some("inspect-patch-layer") => inspect_patch_layer_command(&args),
+        Some("decode-patch-layer") => decode_patch_layer_command(&args),
         Some("rebuild-image") => rebuild_image_command(&args),
         Some("audit-rebuild") => audit_rebuild_command(&args),
+        Some("compose-image-artifact") => compose_image_artifact_command(&args),
         Some("extract-sharedsupport") => extract_sharedsupport(&args),
         Some("plan") | Some("plan-installer") => plan_installer(&args),
         Some("plan-system") => plan_system(&args),
@@ -76,7 +82,16 @@ fn plan_installer(args: &[String]) -> Result<(), String> {
     let refresh_artifacts = has_flag(args, "--refresh-artifacts");
     let bootloader_source = parse_bootloader_source(args)?;
     let bootloader = resolve_bootloader(&bootloader_source, refresh_artifacts)?;
-    let plan = build_installer_with_options(release, disk, refresh_artifacts, bootloader)?;
+    let asset_root = parse_path_flag(args, "--asset-root")?;
+    let metadata_root = parse_path_flag(args, "--metadata-root")?;
+    let plan = build_installer_with_substrate_options(
+        release,
+        disk,
+        refresh_artifacts,
+        bootloader,
+        asset_root.as_deref().map(Path::new),
+        metadata_root.as_deref().map(Path::new),
+    )?;
     println!("{}", render_plan(&plan));
     Ok(())
 }
@@ -236,6 +251,83 @@ fn materialize_yaa_prefix(args: &[String]) -> Result<(), String> {
         result.last_next_record_offset
     );
     println!("Metadata: {}", result.metadata_path.display());
+    Ok(())
+}
+
+fn inspect_patch_layer_command(args: &[String]) -> Result<(), String> {
+    let path = args.get(2).ok_or_else(|| {
+        "usage: ban-grapple inspect-patch-layer /path/to/BXDIFF50-or-RIDIFF10".to_string()
+    })?;
+    let probe = inspect_patch_layer(Path::new(path)).map_err(|err| err.to_string())?;
+    println!("Patch layer: {}", probe.path.display());
+    println!("Wrapper kind: {}", probe.wrapper_kind.label());
+    println!("Size: {} bytes", probe.size_bytes);
+    println!("pbzx offset: {}", probe.pbzx_offset);
+    println!("Wrapper prefix length: {}", probe.wrapper_prefix_len);
+    println!(
+        "Wrapper prefix sha256_16: {}",
+        probe.wrapper_prefix_sha256_16
+    );
+    println!("Decoded size: {} bytes", probe.decoded_size);
+    println!("Decoded sha256: {}", probe.decoded_sha256);
+    println!("Application law: {}", probe.application_law.label());
+    if let Some(disk_image) = probe.disk_image {
+        println!("Decoded disk image:");
+        println!("  has EFI PART header: {}", disk_image.has_efi_part_header);
+        println!("  has koly trailer: {}", disk_image.has_koly_trailer);
+        if let Some(offset) = disk_image.koly_offset {
+            println!("  koly offset: {}", offset);
+        }
+    }
+    if let Some(program) = probe.ridiff_program {
+        println!("RIDIFF extent program:");
+        println!("  target size: {} bytes", program.target_size_bytes);
+        println!("  declared record width: {}", program.declared_record_width);
+        println!("  header count a: {}", program.header_count_a);
+        println!("  header count b: {}", program.header_count_b);
+        println!("  primary extent pairs: {}", program.primary_extent_pair_count);
+        println!(
+            "  spillover extent pairs: {}",
+            program.spillover_extent_pair_count
+        );
+        println!("  total extent pairs: {}", program.total_extent_pair_count);
+        println!(
+            "  primary extent table end offset: {}",
+            program.primary_extent_table_end_offset
+        );
+        println!(
+            "  total extent table end offset: {}",
+            program.total_extent_table_end_offset
+        );
+        println!("  control region bytes: {}", program.control_region_bytes);
+        println!("  covered bytes: {}", program.covered_bytes);
+        println!("  max extent end: {}", program.max_extent_end);
+        println!("  monotonic offsets: {}", program.monotonic_offsets);
+        println!(
+            "  requires external base/transform: {}",
+            program.requires_external_base_or_transform
+        );
+    }
+    Ok(())
+}
+
+fn decode_patch_layer_command(args: &[String]) -> Result<(), String> {
+    let path = args.get(2).ok_or_else(|| {
+        "usage: ban-grapple decode-patch-layer /path/to/BXDIFF50-or-RIDIFF10 /path/to/output.bin"
+            .to_string()
+    })?;
+    let output_path = args.get(3).ok_or_else(|| {
+        "usage: ban-grapple decode-patch-layer /path/to/BXDIFF50-or-RIDIFF10 /path/to/output.bin"
+            .to_string()
+    })?;
+    let decoded = decode_patch_layer(Path::new(path), Path::new(output_path))
+        .map_err(|err| err.to_string())?;
+    println!("Patch layer: {}", decoded.path.display());
+    println!("Wrapper kind: {}", decoded.wrapper_kind.label());
+    println!("Decoded output: {}", decoded.decoded_path.display());
+    println!("Decoded size: {} bytes", decoded.decoded_size);
+    println!("Decoded sha256: {}", decoded.decoded_sha256);
+    println!("Application law: {}", decoded.application_law.label());
     Ok(())
 }
 
@@ -442,6 +534,41 @@ fn audit_rebuild_command(args: &[String]) -> Result<(), String> {
         for path in &report.samples.xattr_sidecars_missing {
             println!("  {path}");
         }
+    }
+
+    Ok(())
+}
+
+fn compose_image_artifact_command(args: &[String]) -> Result<(), String> {
+    let rebuilt_root = args.get(2).ok_or_else(|| {
+        "usage: ban-grapple compose-image-artifact /path/to/rebuilt-tree /path/to/output-root [--asset-root PATH] [--metadata-root PATH]"
+            .to_string()
+    })?;
+    let output_root = args.get(3).ok_or_else(|| {
+        "usage: ban-grapple compose-image-artifact /path/to/rebuilt-tree /path/to/output-root [--asset-root PATH] [--metadata-root PATH]"
+            .to_string()
+    })?;
+    let asset_root = parse_path_flag(args, "--asset-root")?;
+    let metadata_root = parse_path_flag(args, "--metadata-root")?;
+
+    let artifact = compose_image_artifact(
+        Path::new(rebuilt_root),
+        Path::new(output_root),
+        &ComposeOptions {
+            asset_root: asset_root.map(PathBuf::from),
+            metadata_root: metadata_root.map(PathBuf::from),
+        },
+    )
+    .map_err(|err| err.to_string())?;
+
+    println!("Output root: {}", artifact.output_root.display());
+    println!("Manifest: {}", artifact.manifest_path.display());
+    println!("Artifact kind: {}", artifact.manifest.artifact_kind);
+    println!("Bootability: {}", artifact.manifest.bootability);
+    println!("Bundled files: {}", artifact.manifest.bundled_files.len());
+    println!("Blockers:");
+    for blocker in &artifact.manifest.blockers {
+        println!("  - {blocker}");
     }
 
     Ok(())
@@ -667,7 +794,16 @@ fn plan_system(args: &[String]) -> Result<(), String> {
     let disk = find_disk(plan_disk_arg(args))?;
     let refresh_artifacts = has_flag(args, "--refresh-artifacts");
     let channel = parse_channel(args)?;
-    let plan = deploy_system_with_options(release, disk, refresh_artifacts, channel)?;
+    let asset_root = parse_path_flag(args, "--asset-root")?;
+    let metadata_root = parse_path_flag(args, "--metadata-root")?;
+    let plan = deploy_system_with_substrate_options(
+        release,
+        disk,
+        refresh_artifacts,
+        channel,
+        asset_root.as_deref().map(Path::new),
+        metadata_root.as_deref().map(Path::new),
+    )?;
     println!("{}", render_plan(&plan));
     Ok(())
 }
@@ -707,7 +843,10 @@ fn first_release(releases: &[InstallerRelease]) -> Result<InstallerRelease, Stri
 }
 
 fn plan_disk_arg(args: &[String]) -> Option<String> {
-    positional_args(args, &["--efi", "--release", "--channel"])
+    positional_args(
+        args,
+        &["--efi", "--release", "--channel", "--asset-root", "--metadata-root"],
+    )
         .into_iter()
         .next()
 }
@@ -752,6 +891,19 @@ fn parse_release_query(args: &[String]) -> Result<Option<String>, String> {
             let value = iter.next().ok_or_else(|| {
                 "usage: --release <index|product-id|version|build|name>".to_string()
             })?;
+            return Ok(Some(value.clone()));
+        }
+    }
+    Ok(None)
+}
+
+fn parse_path_flag(args: &[String], flag: &str) -> Result<Option<String>, String> {
+    let mut iter = args.iter().skip(2);
+    while let Some(arg) = iter.next() {
+        if arg == flag {
+            let value = iter
+                .next()
+                .ok_or_else(|| format!("usage: {flag} <path>"))?;
             return Ok(Some(value.clone()));
         }
     }
@@ -864,7 +1016,7 @@ fn print_basesystem_artifact(label: &str, artifact: &ban_grapple::basesystem::Ba
 
 fn find_disk(path: Option<String>) -> Result<ban_grapple::disk::DiskDevice, String> {
     let path = path.ok_or_else(|| {
-        "usage: ban-grapple plan-installer [--release SELECTOR] [--efi PATH | --fetch-opencore] [--refresh-artifacts] /dev/sdX"
+        "usage: ban-grapple plan-installer [--release SELECTOR] [--efi PATH | --fetch-opencore] [--asset-root PATH] [--metadata-root PATH] [--refresh-artifacts] /dev/sdX"
             .to_string()
     })?;
     discover_disks()
@@ -993,7 +1145,7 @@ fn prompt(message: &str) -> Result<String, String> {
 
 fn print_help() {
     println!(
-        "ban-grapple\n\nWith no command, start an interactive read-only planning flow.\n\nCommands:\n  list-releases                                                     Show macOS releases, refreshing automatically every 24 hours\n  refresh-releases                                                  Force a live catalog refresh and replace the cache\n  list-disks                                                        Inspect local block devices safely\n  inspect-runtime-manifest /path/to/metadata-or-directory /path/to/payload-root-or-AssetData\n                                                                   Decode PreflightBuildManifest and report resolved runtime paths\n  inspect-runtime-substrate /path/to/payload-root-or-AssetData [metadata-root]\n                                                                   Join BaseSystem patches, runtime assets, cryptex image patches, and optional manifest evidence\n  discover-runtime /path/to/payload-root-or-AssetData              Discover BaseSystem or SURamDisk runtime pairs in extracted assets\n  inspect-basesystem /path/to/payload-root-or-AssetData            Report the separate BaseSystem patch and trust artifacts\n  inspect-xar /path/to/InstallAssistant.pkg                         List XAR members with resolved absolute offsets\n  inspect-yaa /path/to/decoded-yaa.bin [--start-offset N] [--records N]\n                                                                   Summarize a decoded YAA stream without materializing file payloads\n  inspect-yaa-regions /path/to/decoded-yaa.bin [--start-offset N] [--records-per-region N] [--regions N]\n                                                                   Summarize consecutive regions of a decoded YAA stream\n  materialize-yaa-prefix /path/to/decoded-yaa.bin /path/to/output-root [--start-offset N] [--records N]\n                                                                   Reconstruct a small decoded YAA prefix into a filesystem tree\n  rebuild-image /path/to/AssetData-or-payloadv2 /path/to/output-root\n                                                                   Decode ordered payloadv2 shards and reconstruct the full filesystem tree\n  audit-rebuild /path/to/rebuilt-tree\n                                                                   Audit replay coverage, modes, symlinks, and xattr sidecar coverage\n  extract-sharedsupport /path/to/InstallAssistant.pkg /path/to/SharedSupport.dmg\n                                                                   Extract the SharedSupport.dmg member read-only from InstallAssistant.pkg\n  plan-installer [--release SELECTOR] [--efi PATH | --fetch-opencore] [--refresh-artifacts] /dev/sdX\n                                                                   Build a dry installer-media plan with a resolved EFI source\n  plan-system [--release SELECTOR] [--channel stable|beta|lab] [--refresh-artifacts] /dev/sdX\n                                                                   Build a dry full-system deployment plan"
+        "ban-grapple\n\nWith no command, start an interactive read-only planning flow.\n\nCommands:\n  list-releases                                                     Show macOS releases, refreshing automatically every 24 hours\n  refresh-releases                                                  Force a live catalog refresh and replace the cache\n  list-disks                                                        Inspect local block devices safely\n  inspect-runtime-manifest /path/to/metadata-or-directory /path/to/payload-root-or-AssetData\n                                                                   Decode PreflightBuildManifest and report resolved runtime paths\n  inspect-runtime-substrate /path/to/payload-root-or-AssetData [metadata-root]\n                                                                   Join BaseSystem patches, runtime assets, cryptex image patches, and optional manifest evidence\n  discover-runtime /path/to/payload-root-or-AssetData              Discover BaseSystem or SURamDisk runtime pairs in extracted assets\n  inspect-basesystem /path/to/payload-root-or-AssetData            Report the separate BaseSystem patch and trust artifacts\n  inspect-patch-layer /path/to/BXDIFF50-or-RIDIFF10                Inspect a native patch wrapper and its inner pbzx payload\n  decode-patch-layer /path/to/BXDIFF50-or-RIDIFF10 /path/to/output.bin\n                                                                   Decode the inner pbzx payload from a native patch wrapper\n  inspect-xar /path/to/InstallAssistant.pkg                         List XAR members with resolved absolute offsets\n  inspect-yaa /path/to/decoded-yaa.bin [--start-offset N] [--records N]\n                                                                   Summarize a decoded YAA stream without materializing file payloads\n  inspect-yaa-regions /path/to/decoded-yaa.bin [--start-offset N] [--records-per-region N] [--regions N]\n                                                                   Summarize consecutive regions of a decoded YAA stream\n  materialize-yaa-prefix /path/to/decoded-yaa.bin /path/to/output-root [--start-offset N] [--records N]\n                                                                   Reconstruct a small decoded YAA prefix into a filesystem tree\n  rebuild-image /path/to/AssetData-or-payloadv2 /path/to/output-root\n                                                                   Decode ordered payloadv2 shards and reconstruct the full filesystem tree\n  audit-rebuild /path/to/rebuilt-tree\n                                                                   Audit replay coverage, modes, symlinks, and xattr sidecar coverage\n  compose-image-artifact /path/to/rebuilt-tree /path/to/output-root [--asset-root PATH] [--metadata-root PATH]\n                                                                   Compose a deterministic conservative artifact bundle with receipts, hashes, and explicit blockers\n  extract-sharedsupport /path/to/InstallAssistant.pkg /path/to/SharedSupport.dmg\n                                                                   Extract the SharedSupport.dmg member read-only from InstallAssistant.pkg\n  plan-installer [--release SELECTOR] [--efi PATH | --fetch-opencore] [--asset-root PATH] [--metadata-root PATH] [--refresh-artifacts] /dev/sdX\n                                                                   Build a dry installer-media plan with a resolved EFI source and optional substrate evidence\n  plan-system [--release SELECTOR] [--channel stable|beta|lab] [--asset-root PATH] [--metadata-root PATH] [--refresh-artifacts] /dev/sdX\n                                                                   Build a dry full-system deployment plan with optional substrate evidence"
     );
 }
 
@@ -1001,7 +1153,7 @@ fn print_help() {
 mod tests {
     use ban_grapple::catalog::InstallerRelease;
 
-    use super::{parse_release_query, plan_disk_arg, select_release};
+    use super::{parse_path_flag, parse_release_query, plan_disk_arg, select_release};
 
     fn sample_releases() -> Vec<InstallerRelease> {
         vec![
@@ -1059,6 +1211,21 @@ mod tests {
     }
 
     #[test]
+    fn plan_disk_arg_skips_substrate_flag_values() {
+        let args = vec![
+            "ban-grapple".to_string(),
+            "plan-installer".to_string(),
+            "--asset-root".to_string(),
+            "/tmp/payload-root".to_string(),
+            "--metadata-root".to_string(),
+            "/tmp/metadata".to_string(),
+            "/dev/sdd".to_string(),
+        ];
+
+        assert_eq!(plan_disk_arg(&args).as_deref(), Some("/dev/sdd"));
+    }
+
+    #[test]
     fn parse_release_query_reads_value() {
         let args = vec![
             "ban-grapple".to_string(),
@@ -1071,6 +1238,21 @@ mod tests {
         assert_eq!(
             parse_release_query(&args).unwrap().as_deref(),
             Some("23E214")
+        );
+    }
+
+    #[test]
+    fn parse_path_flag_reads_value() {
+        let args = vec![
+            "ban-grapple".to_string(),
+            "plan-system".to_string(),
+            "--asset-root".to_string(),
+            "/tmp/payload-root".to_string(),
+        ];
+
+        assert_eq!(
+            parse_path_flag(&args, "--asset-root").unwrap().as_deref(),
+            Some("/tmp/payload-root")
         );
     }
 

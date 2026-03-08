@@ -211,6 +211,7 @@ Implemented in this phase:
   - BaseSystem patch evidence
   - cryptex image patch inventory
   - optional runtime manifest evidence
+- execution-plan substrate reporting for installer and full-system planning, with optional live substrate inspection via `--asset-root`
 - CLI surface:
   - `inspect-runtime-substrate /path/to/payload-root-or-AssetData [metadata-root]`
   - improved `discover-runtime`
