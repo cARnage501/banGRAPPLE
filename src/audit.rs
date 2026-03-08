@@ -905,13 +905,14 @@ fn record_inaccessible_sample(root: &Path, path: &Path, samples: &mut AuditSampl
 }
 
 #[cfg(test)]
-    mod tests {
-        use std::fs;
-        use std::os::unix::fs::{PermissionsExt, symlink};
-        use std::path::PathBuf;
-        use std::time::{SystemTime, UNIX_EPOCH};
+mod tests {
+    use std::collections::BTreeMap;
+    use std::fs;
+    use std::os::unix::fs::{PermissionsExt, symlink};
+    use std::path::{Path, PathBuf};
+    use std::time::{SystemTime, UNIX_EPOCH};
 
-        use super::{BrokenSymlinkCause, audit_rebuild};
+    use super::{BrokenSymlinkCause, audit_rebuild, classify_broken_symlink_cause};
 
     fn temp_dir(label: &str) -> PathBuf {
         let unique = SystemTime::now()
@@ -920,6 +921,37 @@ fn record_inaccessible_sample(root: &Path, path: &Path, samples: &mut AuditSampl
             .as_nanos();
         let path = std::env::temp_dir().join(format!("ban-grapple-{label}-{unique}"));
         fs::create_dir_all(&path).expect("temp dir should be created");
+        path
+    }
+
+    fn write_info_plist(path: &Path, executable: &str) {
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).expect("plist parent dirs");
+        }
+        fs::write(
+            path,
+            format!(
+                r#"<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleExecutable</key>
+    <string>{}</string>
+</dict>
+</plist>
+"#,
+                executable
+            ),
+        )
+        .expect("info plist");
+    }
+
+    fn create_broken_symlink(root: &Path, relative: &str, target: &str) -> PathBuf {
+        let path = root.join(relative);
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).expect("symlink parent dirs");
+        }
+        symlink(target, &path).expect("broken symlink");
         path
     }
 
@@ -1113,5 +1145,189 @@ fn record_inaccessible_sample(root: &Path, path: &Path, samples: &mut AuditSampl
         );
 
         fs::remove_dir_all(root).expect("cleanup");
+    }
+
+    #[test]
+    fn broken_symlink_classifier_acceptance_buckets() {
+        struct Case {
+            label: &'static str,
+            relative: &'static str,
+            target: &'static str,
+            expected: BrokenSymlinkCause,
+            setup: fn(&Path),
+        }
+
+        fn no_setup(_: &Path) {}
+
+        fn setup_bundle_contract(root: &Path) {
+            write_info_plist(
+                &root.join("System/Library/Frameworks/Test.framework/Versions/A/Resources/Info.plist"),
+                "Test",
+            );
+        }
+
+        fn setup_bundle_structural(root: &Path) {
+            write_info_plist(
+                &root.join("System/Library/PrivateFrameworks/FinderKit.framework/Versions/A/Resources/Info.plist"),
+                "FinderKit",
+            );
+        }
+
+        fn setup_bundle_no_info(root: &Path) {
+            fs::create_dir_all(root.join("System/Library/Frameworks/DriverKit.framework"))
+                .expect("bundle dirs");
+        }
+
+        fn setup_bundle_mismatch(root: &Path) {
+            write_info_plist(
+                &root.join("System/Library/PrivateFrameworks/StoreServices.framework/Versions/A/Resources/Info.plist"),
+                "iTunesStore",
+            );
+        }
+
+        fn setup_framework_relative(root: &Path) {
+            fs::create_dir_all(root.join("System/Library/Frameworks")).expect("framework dir");
+            fs::create_dir_all(root.join("System/Library/PrivateFrameworks"))
+                .expect("private framework dir");
+        }
+
+        let cases = [
+            Case {
+                label: "bundle_executable_contract_missing_producer",
+                relative: "System/Library/Frameworks/Test.framework/Test",
+                target: "Versions/Current/Test",
+                expected: BrokenSymlinkCause::BundleExecutableContractMissingProducer,
+                setup: setup_bundle_contract,
+            },
+            Case {
+                label: "firmware_alias_map_missing_producer",
+                relative: "usr/share/firmware/wifi/C-4377__s-B3/P-formosa-X3_M-SPPR_V-m__m-4.5.txt",
+                target: "P-formosa_M-SPPR_V-m__m-4.5.txt",
+                expected: BrokenSymlinkCause::FirmwareAliasMapMissingProducer,
+                setup: no_setup,
+            },
+            Case {
+                label: "locale_alias_map_missing_producer",
+                relative: "usr/share/locale/da_DK.ISO8859-15/LC_NUMERIC",
+                target: "../da_DK.ISO8859-1/LC_NUMERIC",
+                expected: BrokenSymlinkCause::LocaleAliasMapMissingProducer,
+                setup: no_setup,
+            },
+            Case {
+                label: "host_root_absolute_expected_external",
+                relative: "System/Library/CoreServices/DefaultDesktop.heic",
+                target: "/System/Library/Desktop Pictures/Ventura Graphic.heic",
+                expected: BrokenSymlinkCause::HostRootAbsoluteExpectedExternal,
+                setup: no_setup,
+            },
+            Case {
+                label: "cryptex_runtime_substrate_missing",
+                relative: "System/Cryptexes/App",
+                target: "../../System/Volumes/Preboot/Cryptexes/App",
+                expected: BrokenSymlinkCause::CryptexRuntimeSubstrateMissing,
+                setup: no_setup,
+            },
+            Case {
+                label: "bundle_structural_alias_missing_producer",
+                relative: "System/Library/PrivateFrameworks/FinderKit.framework/XPCServices",
+                target: "Versions/Current/XPCServices",
+                expected: BrokenSymlinkCause::BundleStructuralAliasMissingProducer,
+                setup: setup_bundle_structural,
+            },
+            Case {
+                label: "cross_tree_parent_chain_missing",
+                relative: "usr/X11",
+                target: "../private/var/select/X11",
+                expected: BrokenSymlinkCause::CrossTreeParentChainMissing,
+                setup: no_setup,
+            },
+            Case {
+                label: "framework_relative_alias_missing_producer",
+                relative: "System/Library/PrivateFrameworks/AuthenticationServices.framework",
+                target: "../Frameworks/AuthenticationServices.framework",
+                expected: BrokenSymlinkCause::FrameworkRelativeAliasMissingProducer,
+                setup: setup_framework_relative,
+            },
+            Case {
+                label: "bundle_contract_metadata_unavailable",
+                relative: "System/Library/Frameworks/DriverKit.framework/DriverKit",
+                target: "Versions/Current/DriverKit",
+                expected: BrokenSymlinkCause::BundleContractMetadataUnavailable,
+                setup: setup_bundle_no_info,
+            },
+            Case {
+                label: "library_alias_missing_producer",
+                relative: "usr/lib/libpcre2-8.dylib",
+                target: "libpcre2-8.0.dylib",
+                expected: BrokenSymlinkCause::LibraryAliasMissingProducer,
+                setup: no_setup,
+            },
+            Case {
+                label: "template_data_or_paired_volume_substrate_missing",
+                relative: "System/Library/Templates/Data/private/etc/localtime",
+                target: "/var/db/timezone/zoneinfo/US/Pacific",
+                expected: BrokenSymlinkCause::TemplateDataOrPairedVolumeSubstrateMissing,
+                setup: no_setup,
+            },
+            Case {
+                label: "bundle_declared_name_mismatch",
+                relative: "System/Library/PrivateFrameworks/StoreServices.framework/StoreServices",
+                target: "Versions/Current/StoreServices",
+                expected: BrokenSymlinkCause::BundleDeclaredNameMismatch,
+                setup: setup_bundle_mismatch,
+            },
+            Case {
+                label: "private_root_substrate_missing",
+                relative: "var",
+                target: "private/var",
+                expected: BrokenSymlinkCause::PrivateRootSubstrateMissing,
+                setup: no_setup,
+            },
+            Case {
+                label: "appleinternal_expected_external",
+                relative:
+                    "System/Library/Templates/Data/System/Library/CoreServices/CoreTypes.bundle/Contents/Library/_.bundle",
+                target: "/AppleInternal/CoreServices/CoreTypes/AppleInternalTypes.bundle",
+                expected: BrokenSymlinkCause::AppleinternalExpectedExternal,
+                setup: no_setup,
+            },
+            Case {
+                label: "data_volume_substrate_missing",
+                relative: ".VolumeIcon.icns",
+                target: "System/Volumes/Data/.VolumeIcon.icns",
+                expected: BrokenSymlinkCause::DataVolumeSubstrateMissing,
+                setup: no_setup,
+            },
+            Case {
+                label: "packaging_alias_missing_producer",
+                relative:
+                    "System/Applications/Utilities/VoiceOver Utility.app/Contents/OtherBinaries/VoiceOverUtilityCacheBuilder.app/Contents/PkgInfo",
+                target: "../../../PkgInfo",
+                expected: BrokenSymlinkCause::PackagingAliasMissingProducer,
+                setup: no_setup,
+            },
+            Case {
+                label: "host_or_paired_root_substrate_missing",
+                relative: "usr/share/zoneinfo",
+                target: "/var/db/timezone/zoneinfo",
+                expected: BrokenSymlinkCause::HostOrPairedRootSubstrateMissing,
+                setup: no_setup,
+            },
+        ];
+
+        for case in cases {
+            let root = temp_dir(case.label);
+            (case.setup)(&root);
+            let symlink_path = create_broken_symlink(&root, case.relative, case.target);
+            let receipt = classify_broken_symlink_cause(
+                &root,
+                &symlink_path,
+                Path::new(case.target),
+                &mut BTreeMap::new(),
+            )
+            .expect("classification should succeed");
+            assert_eq!(receipt.cause, case.expected, "case {}", case.label);
+            fs::remove_dir_all(root).expect("cleanup");
+        }
     }
 }

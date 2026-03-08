@@ -149,3 +149,50 @@ This milestone does not yet prove:
 - final image reconstruction is complete
 - bundle contract obligations have explicit materialized producers
 - BaseSystem and cryptex patch composition are fully integrated into a final deployable image artifact
+
+## Milestone 5: Acceptance-Tested Causal Audit Taxonomy
+
+The native causal broken-symlink taxonomy is now protected by bucket-specific acceptance tests in the Rust test suite.
+
+Implemented in this phase:
+
+- bucket-specific acceptance coverage for representative causal classes in `src/audit.rs`
+- regression coverage for conservative causal reporting and receipt generation
+- native test enforcement that the audit keeps classifying representative broken symlink shapes into the intended producer and substrate buckets
+
+Verification:
+
+- `cargo test -- --nocapture`
+- observed result: `67` tests passed, `0` failed
+
+Representative coverage now includes:
+
+- `bundle_executable_contract_missing_producer`
+- `firmware_alias_map_missing_producer`
+- `locale_alias_map_missing_producer`
+- `host_root_absolute_expected_external`
+- `cryptex_runtime_substrate_missing`
+- `bundle_structural_alias_missing_producer`
+- `cross_tree_parent_chain_missing`
+- `framework_relative_alias_missing_producer`
+- `bundle_contract_metadata_unavailable`
+- `library_alias_missing_producer`
+- `template_data_or_paired_volume_substrate_missing`
+- `bundle_declared_name_mismatch`
+- `private_root_substrate_missing`
+- `appleinternal_expected_external`
+- `data_volume_substrate_missing`
+- `packaging_alias_missing_producer`
+- `host_or_paired_root_substrate_missing`
+
+This milestone proves:
+
+- the causal audit taxonomy is now enforced behavior, not just an observed analysis result
+- representative producer, substrate, and host-artifact classes are protected against regression in the Rust test suite
+- the conservative audit/reporting path is acceptance-tested end to end at the classification layer
+
+This milestone does not yet prove:
+
+- final image reconstruction is complete
+- unresolved contract classes have explicit materialized producers
+- optional synthetic compatibility behavior has been designed or implemented
