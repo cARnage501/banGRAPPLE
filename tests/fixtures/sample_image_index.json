@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "channels": [
+    {
+      "name": "stable",
+      "images": [
+        {
+          "release": {
+            "name": "macOS Sonoma",
+            "version": "14.4",
+            "build": "23E214"
+          },
+          "manifest_path": "manifest.json",
+          "image_name": "macos-sonoma-14.4-23e214.img.zst",
+          "published_at": "2026-03-06T00:00:00Z"
+        }
+      ]
+    },
+    {
+      "name": "beta",
+      "images": []
+    },
+    {
+      "name": "lab",
+      "images": []
+    }
+  ]
+}

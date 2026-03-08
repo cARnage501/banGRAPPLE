@@ -1,0 +1,1851 @@
+{
+  "input_path": "/tmp/ssroot/Shared Support/com_apple_MobileAsset_MacSoftwareUpdate/97a386b5182904411d3cf455febfcf86757eb2cd.zip",
+  "control_files": {
+    "payloadv2/fixup.manifest": {
+      "present": true,
+      "name": "payloadv2/fixup.manifest",
+      "size": 2531932,
+      "magic": "pbzx",
+      "head_hex": "70627a7800000000001000000000000000100000000000000000c10cfd377a585a000000ff12d94103c0d58103808040",
+      "pbzx": {
+        "initial_flags": 1048576,
+        "chunk_count": 66,
+        "chunks": [
+          {
+            "flags": 1048576,
+            "compressed_length": 49420,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 43976,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 42336,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 39944,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 18980,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 20096,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 19944,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 17948,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 19792,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 24512,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 29728,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 26652,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 26460,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 27248,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 26964,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 26720,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 26320,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 27008,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 26644,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 26008,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 26836,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 28736,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 23692,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 40088,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 35468,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 45048,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 40184,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 41416,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 47408,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 46496,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 57908,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 45336,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 55400,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 56964,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 57068,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 52700,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 53720,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 48492,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 67784,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 49340,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 43884,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 40252,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 48796,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 36720,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 36448,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 40976,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 48624,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 45712,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 29004,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 22768,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 24204,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 19724,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 27724,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 32640,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 44888,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 42424,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 46992,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 45708,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 28504,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 44972,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 44044,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 35040,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 42852,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 49848,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 1048576,
+            "compressed_length": 73508,
+            "decoded_length": 1048576,
+            "encoding": "xz"
+          },
+          {
+            "flags": 523310,
+            "compressed_length": 47824,
+            "decoded_length": 523310,
+            "encoding": "xz"
+          }
+        ]
+      },
+      "decoded_size": 68680750,
+      "decoded_magic": "binary",
+      "decoded_head_hex": "5941413129005459503144504154500000554944310047494431004d4f4432ed01464c47340000100059414131600054",
+      "decoded_strings_sample": [
+        "TYP1DPATP",
+        "TYP1LPATP",
+        ".VolumeIcon.icnsLNKP$",
+        "System/Volumes/Data/.VolumeIcon.icnsUID1",
+        "GID1PMOD2",
+        "TYP1FPATP",
+        ".fileUID1",
+        ".nofollowUID1",
+        ".resolveUID1",
+        ".volUID1",
+        "ApplicationsUID1",
+        "com.apple.fs.firmlink",
+        "Applications",
+        "LibraryUID1",
+        "SystemUID1",
+        "com.apple.rootless",
+        "System/.localizedUID1",
+        "System/ApplicationsUID1",
+        "System/Applications/.localizedHLC1",
+        "TYP1DPATP!"
+      ]
+    },
+    "payloadv2/payload_chunks.txt": {
+      "present": true,
+      "name": "payloadv2/payload_chunks.txt",
+      "size": 522,
+      "magic": "textish",
+      "head_hex": "303a203236323134343030300a313a203236323134343030300a323a203235343730353636340a333a20323338353130",
+      "strings_sample": [
+        "0: 262144000",
+        "1: 262144000",
+        "2: 254705664",
+        "3: 238510080",
+        "4: 257994752",
+        "5: 259178496",
+        "6: 244215808",
+        "7: 257916928",
+        "8: 250269696",
+        "9: 248926208"
+      ]
+    },
+    "payloadv2/links.txt": {
+      "present": true,
+      "name": "payloadv2/links.txt",
+      "size": 13433301,
+      "magic": "textish",
+      "head_hex": "3d53797374656d2f2e6c6f63616c697a65640a2b53797374656d2f4170706c69636174696f6e732f2e6c6f63616c697a",
+      "strings_sample": [
+        "=System/.localized",
+        "+System/Applications/.localized",
+        "=System/Applications/App Store.app/Contents/Resources/en_AU.lproj/MainMenu.strings",
+        "+System/Applications/App Store.app/Contents/Resources/en_GB.lproj/MainMenu.strings",
+        "=System/Applications/App Store.app/Contents/Resources/en_AU.lproj/PreferenceButtonPrompt.strings",
+        "+System/Applications/App Store.app/Contents/Resources/en_GB.lproj/PreferenceButtonPrompt.strings",
+        "=System/Applications/App Store.app/Contents/PlugIns/DockTile.docktileplugin/Contents/_CodeSignature/CodeResources",
+        "+System/Applications/App Store.app/Contents/_CodeSignature/CodeResources",
+        "=System/Applications/Automator.app/Contents/Resources/en.lproj/ServicesMenu.strings",
+        "+System/Applications/Automator.app/Contents/Resources/en_AU.lproj/ServicesMenu.strings"
+      ],
+      "link_summary": {
+        "line_count": 89022,
+        "pair_count": 42471,
+        "sample_pairs": [
+          {
+            "source": "System/.localized",
+            "target": "System/Applications/.localized"
+          },
+          {
+            "source": "System/Applications/App Store.app/Contents/Resources/en_AU.lproj/MainMenu.strings",
+            "target": "System/Applications/App Store.app/Contents/Resources/en_GB.lproj/MainMenu.strings"
+          },
+          {
+            "source": "System/Applications/App Store.app/Contents/Resources/en_AU.lproj/PreferenceButtonPrompt.strings",
+            "target": "System/Applications/App Store.app/Contents/Resources/en_GB.lproj/PreferenceButtonPrompt.strings"
+          },
+          {
+            "source": "System/Applications/App Store.app/Contents/PlugIns/DockTile.docktileplugin/Contents/_CodeSignature/CodeResources",
+            "target": "System/Applications/App Store.app/Contents/_CodeSignature/CodeResources"
+          },
+          {
+            "source": "System/Applications/Automator.app/Contents/Resources/en.lproj/ServicesMenu.strings",
+            "target": "System/Applications/Automator.app/Contents/Resources/en_AU.lproj/ServicesMenu.strings"
+          },
+          {
+            "source": "System/Applications/Automator.app/Contents/Resources/es.lproj/ServicesMenu.strings",
+            "target": "System/Applications/Automator.app/Contents/Resources/es_419.lproj/ServicesMenu.strings"
+          },
+          {
+            "source": "System/Applications/Automator.app/Contents/Resources/fr.lproj/ServicesMenu.strings",
+            "target": "System/Applications/Automator.app/Contents/Resources/fr_CA.lproj/ServicesMenu.strings"
+          },
+          {
+            "source": "System/Applications/Automator.app/Contents/Resources/zh_HK.lproj/ServicesMenu.strings",
+            "target": "System/Applications/Automator.app/Contents/Resources/zh_TW.lproj/ServicesMenu.strings"
+          },
+          {
+            "source": "System/Applications/App Store.app/Contents/PlugIns/DockTile.docktileplugin/Contents/_CodeSignature/CodeResources",
+            "target": "System/Applications/Automator.app/Contents/_CodeSignature/CodeResources"
+          },
+          {
+            "source": "System/Applications/Books.app/Contents/Frameworks/BKLibrary.framework/Versions/A/Resources/version.plist",
+            "target": "System/Applications/Books.app/Contents/Frameworks/BookAnalytics.framework/Versions/A/Resources/version.plist"
+          },
+          {
+            "source": "System/Applications/App Store.app/Contents/PlugIns/DockTile.docktileplugin/Contents/_CodeSignature/CodeResources",
+            "target": "System/Applications/Books.app/Contents/Frameworks/BookAnalytics.framework/Versions/A/_CodeSignature/CodeResources"
+          },
+          {
+            "source": "System/Applications/Books.app/Contents/Frameworks/BKAudiobooks.framework/Versions/A/Resources/version.plist",
+            "target": "System/Applications/Books.app/Contents/Frameworks/BookCore.framework/Versions/A/Resources/version.plist"
+          },
+          {
+            "source": "System/Applications/App Store.app/Contents/PlugIns/DockTile.docktileplugin/Contents/_CodeSignature/CodeResources",
+            "target": "System/Applications/Books.app/Contents/Frameworks/BookCore.framework/Versions/A/_CodeSignature/CodeResources"
+          },
+          {
+            "source": "System/Applications/Books.app/Contents/Frameworks/BKLibrary.framework/Versions/A/Resources/version.plist",
+            "target": "System/Applications/Books.app/Contents/Frameworks/BookStoreUI.framework/Versions/A/Resources/version.plist"
+          },
+          {
+            "source": "System/Applications/App Store.app/Contents/PlugIns/DockTile.docktileplugin/Contents/_CodeSignature/CodeResources",
+            "target": "System/Applications/Books.app/Contents/Frameworks/BookStoreUI.framework/Versions/A/_CodeSignature/CodeResources"
+          },
+          {
+            "source": "System/Applications/Books.app/Contents/Frameworks/BKAudiobooks.framework/Versions/A/Resources/version.plist",
+            "target": "System/Applications/Books.app/Contents/Frameworks/EngagementCollector.framework/Versions/A/Resources/version.plist"
+          },
+          {
+            "source": "System/Applications/App Store.app/Contents/PlugIns/DockTile.docktileplugin/Contents/_CodeSignature/CodeResources",
+            "target": "System/Applications/Books.app/Contents/Frameworks/EngagementCollector.framework/Versions/A/_CodeSignature/CodeResources"
+          },
+          {
+            "source": "System/Applications/Books.app/Contents/Frameworks/BKLibrary.framework/Versions/A/Resources/version.plist",
+            "target": "System/Applications/Books.app/Contents/Frameworks/TemplateUI.framework/Versions/A/Resources/version.plist"
+          },
+          {
+            "source": "System/Applications/App Store.app/Contents/PlugIns/DockTile.docktileplugin/Contents/_CodeSignature/CodeResources",
+            "target": "System/Applications/Books.app/Contents/Frameworks/TemplateUI.framework/Versions/A/_CodeSignature/CodeResources"
+          },
+          {
+            "source": "System/Applications/App Store.app/Contents/PkgInfo",
+            "target": "System/Applications/Books.app/Contents/PkgInfo"
+          }
+        ]
+      }
+    },
+    "payloadv2/prepare_payload": {
+      "present": true,
+      "name": "payloadv2/prepare_payload",
+      "size": 12,
+      "magic": "pbzx",
+      "head_hex": "70627a780000000000800000",
+      "pbzx": {
+        "initial_flags": 8388608,
+        "chunk_count": 0,
+        "chunks": []
+      },
+      "decoded_size": 0,
+      "decoded_magic": "textish",
+      "decoded_head_hex": "",
+      "decoded_strings_sample": []
+    },
+    "payloadv2/data_payload": {
+      "present": true,
+      "name": "payloadv2/data_payload",
+      "size": 12,
+      "magic": "pbzx",
+      "head_hex": "70627a780000000000800000",
+      "pbzx": {
+        "initial_flags": 8388608,
+        "chunk_count": 0,
+        "chunks": []
+      },
+      "decoded_size": 0,
+      "decoded_magic": "textish",
+      "decoded_head_hex": "",
+      "decoded_strings_sample": []
+    }
+  },
+  "ordered_payloads": [
+    {
+      "index": 0,
+      "payload_path": "payloadv2/payload.000",
+      "payload_present": true,
+      "payload_size": 648868,
+      "target_size": 262144000,
+      "ecc_path": "payloadv2/payload.000.ecc",
+      "ecc_size": 1017476,
+      "classification": {
+        "path": "payloadv2/payload.000",
+        "size": 648868,
+        "magic": "pbzx",
+        "head_hex": "70627a780000000000800000000000000080000000000000000656d0fd377a585a000000ff12d94104c093ad19808080",
+        "entropy_first_mib": 7.99972,
+        "contains_pbzx": true,
+        "strings_sample": [
+          " [?gw$Nh",
+          "S@=~A.G=k",
+          "NpTWe$(,",
+          "#UGd{@mJ",
+          "2:PijGyS",
+          "+4O8!SwN",
+          "`G<?P,yv@F",
+          "e8Rt7tQ9y",
+          "#~:L%~3`",
+          ")'r*MOlo'"
+        ]
+      }
+    },
+    {
+      "index": 1,
+      "payload_path": "payloadv2/payload.001",
+      "payload_present": true,
+      "payload_size": 603760,
+      "target_size": 262144000,
+      "ecc_path": "payloadv2/payload.001.ecc",
+      "ecc_size": 713816,
+      "classification": {
+        "path": "payloadv2/payload.001",
+        "size": 603760,
+        "magic": "pbzx",
+        "head_hex": "70627a78000000000080000000000000008000000000000000069960fd377a585a000000ff12d94104c0a3b21a808080",
+        "entropy_first_mib": 7.99969,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "k_9vP4Ko",
+          "J8eNRjc;",
+          "udxizn2f8K",
+          "&W>nJ^rl",
+          "FyEqP!/7",
+          "Is*Z\\aW&",
+          "yVm3B$gVw",
+          "5D~Q$QbxG",
+          " v^asq<~",
+          "fc9ej}W2"
+        ]
+      }
+    },
+    {
+      "index": 2,
+      "payload_path": "payloadv2/payload.002",
+      "payload_present": true,
+      "payload_size": 186541108,
+      "target_size": 254705664,
+      "ecc_path": "payloadv2/payload.002.ecc",
+      "ecc_size": 500712,
+      "classification": {
+        "path": "payloadv2/payload.002",
+        "size": 186541108,
+        "magic": "pbzx",
+        "head_hex": "70627a7800000000008000000000000000800000000000000070154cfd377a585a000000ff12d94104c090aac0038080",
+        "entropy_first_mib": 7.99986,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "`*]z~SLu%VZ",
+          "0>R!|GtY",
+          "s(d9\\GS6",
+          "=;#Lf_:b",
+          "yWrj;[0|F",
+          "^g#G5z!$",
+          ".;6*^&v:/l",
+          "+S7z+BM'",
+          "ZfhJ8SmO",
+          "Wo\\[Yb!Z"
+        ]
+      }
+    },
+    {
+      "index": 3,
+      "payload_path": "payloadv2/payload.003",
+      "payload_present": true,
+      "payload_size": 166790104,
+      "target_size": 238510080,
+      "ecc_path": "payloadv2/payload.003.ecc",
+      "ecc_size": 816992,
+      "classification": {
+        "path": "payloadv2/payload.003",
+        "size": 166790104,
+        "magic": "pbzx",
+        "head_hex": "70627a780000000000800000000000000080000000000000007fbfacfd377a585a000000ff12d94104c0f0fefe038080",
+        "entropy_first_mib": 7.99972,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "7UXEhMiW",
+          "l1P^u7;i Q",
+          "^tV6,nt-",
+          "HR?+WIRQ",
+          "T(u1GOo&",
+          "}Q$c.wI$",
+          "4-|0Eja*",
+          "aWe]](tx0d~",
+          "m(>(}I$51",
+          "JLX_5zj<Z"
+        ]
+      }
+    },
+    {
+      "index": 4,
+      "payload_path": "payloadv2/payload.004",
+      "payload_present": true,
+      "payload_size": 166903264,
+      "target_size": 257994752,
+      "ecc_path": "payloadv2/payload.004.ecc",
+      "ecc_size": 570060,
+      "classification": {
+        "path": "payloadv2/payload.004",
+        "size": 166903264,
+        "magic": "pbzx",
+        "head_hex": "70627a780000000000800000000000000080000000000000007ff680fd377a585a000000ff12d94104c0c1ecff038080",
+        "entropy_first_mib": 7.99954,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "s;F04=;T",
+          "2fWyQPV{.",
+          "9g)r\\J|P1",
+          "tQkSC`.J",
+          "|;GYDhd#",
+          ")2&7r>R%",
+          "=@% `XPH",
+          "P>A\"ahcmF",
+          "X-eM\",|Vl+",
+          "gjEDW@Ft"
+        ]
+      }
+    },
+    {
+      "index": 5,
+      "payload_path": "payloadv2/payload.005",
+      "payload_present": true,
+      "payload_size": 207729048,
+      "target_size": 259178496,
+      "ecc_path": "payloadv2/payload.005.ecc",
+      "ecc_size": 555508,
+      "classification": {
+        "path": "payloadv2/payload.005",
+        "size": 207729048,
+        "magic": "pbzx",
+        "head_hex": "70627a7800000000008000000000000000800000000000000046e968fd377a585a000000ff12d94104c0a9d29b028080",
+        "entropy_first_mib": 7.99981,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "d'mUsku=",
+          "mgiK>YEQ",
+          "0UE>o 7_=t",
+          "T+r+Ln1N{_",
+          "<ooOZ)Fxrp",
+          "YLR_#33V?",
+          "lj3,]b3C",
+          "&eB]~)fP1h",
+          "M=`Ue`kR",
+          "GhQI:vc=}"
+        ]
+      }
+    },
+    {
+      "index": 6,
+      "payload_path": "payloadv2/payload.006",
+      "payload_present": true,
+      "payload_size": 180383064,
+      "target_size": 244215808,
+      "ecc_path": "payloadv2/payload.006.ecc",
+      "ecc_size": 814652,
+      "classification": {
+        "path": "payloadv2/payload.006",
+        "size": 180383064,
+        "magic": "pbzx",
+        "head_hex": "70627a780000000000800000000000000080000000000000002e66c4fd377a585a000000ff12d94104c086cdb9018080",
+        "entropy_first_mib": 7.99984,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "J0.wyToB<",
+          "{^_v*dtb4BP#K",
+          "dfzT~y]2",
+          "ZxM/)ekor",
+          "d-AVAo[@",
+          "M1z,i*HTo",
+          "cNI2C\"\\~",
+          "\"fY|NZPz",
+          "tbe*lQ!e4wl",
+          ";xRRM+kdn"
+        ]
+      }
+    },
+    {
+      "index": 7,
+      "payload_path": "payloadv2/payload.007",
+      "payload_present": true,
+      "payload_size": 257843686,
+      "target_size": 257916928,
+      "ecc_path": "payloadv2/payload.007.ecc",
+      "ecc_size": 525064,
+      "classification": {
+        "path": "payloadv2/payload.007",
+        "size": 257843686,
+        "magic": "pbzx",
+        "head_hex": "70627a780000000000800000000000000080000000000000007ff154fd377a585a000000ff12d94104c097e2ff038080",
+        "entropy_first_mib": 7.99979,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "^{j,:Vag5",
+          "nzThup`^F",
+          "h%sLk`ks",
+          "(O2O)-~D",
+          "``c8TW2zl",
+          "+,<qxd=v",
+          "b|MCItJR",
+          "]1X*5651tE",
+          " .vvq1C!R",
+          "DL,|+GRMt"
+        ]
+      }
+    },
+    {
+      "index": 8,
+      "payload_path": "payloadv2/payload.008",
+      "payload_present": true,
+      "payload_size": 248368286,
+      "target_size": 250269696,
+      "ecc_path": "payloadv2/payload.008.ecc",
+      "ecc_size": 518236,
+      "classification": {
+        "path": "payloadv2/payload.008",
+        "size": 248368286,
+        "magic": "pbzx",
+        "head_hex": "70627a780000000000800000000000000080000000000000007ff668fd377a585a000000ff12d94104c0aaecff038080",
+        "entropy_first_mib": 7.99976,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "GQa?(#*g}(",
+          "qFas@pIDu",
+          "Di}%m^{1",
+          "6gx4+{fnY",
+          "0+]\"%^!3",
+          " QqEu}!-",
+          "\"k|M8HIA",
+          ")%w}'O/ay",
+          "43tp,+KY",
+          "F(9DG 1Y"
+        ]
+      }
+    },
+    {
+      "index": 9,
+      "payload_path": "payloadv2/payload.009",
+      "payload_present": true,
+      "payload_size": 200698452,
+      "target_size": 248926208,
+      "ecc_path": "payloadv2/payload.009.ecc",
+      "ecc_size": 596944,
+      "classification": {
+        "path": "payloadv2/payload.009",
+        "size": 200698452,
+        "magic": "pbzx",
+        "head_hex": "70627a7800000000008000000000000000800000000000000080000059414131a9005459503146504154506400537973",
+        "entropy_first_mib": 7.9998,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "TYP1FPATPd",
+          "System/Library/Extensions/AppleAfterburner.kext/Contents/Resources/live_2.62_0x01_secondary_ec00.binUID1",
+          "l)CS?p0p",
+          "E.*>x3C#",
+          "fyg!3v@#/;>0",
+          "O`n4rh2f9",
+          "'(gR40:x",
+          "~U/U5)}dgC",
+          "qbe#,_@y",
+          "PUeN#f6NZ"
+        ]
+      }
+    },
+    {
+      "index": 10,
+      "payload_path": "payloadv2/payload.010",
+      "payload_present": true,
+      "payload_size": 188520220,
+      "target_size": 258277376,
+      "ecc_path": "payloadv2/payload.010.ecc",
+      "ecc_size": 763144,
+      "classification": {
+        "path": "payloadv2/payload.010",
+        "size": 188520220,
+        "magic": "pbzx",
+        "head_hex": "70627a780000000000800000000000000080000000000000006a4d34fd377a585a000000ff12d94104c0f799a9038080",
+        "entropy_first_mib": 7.9998,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "<2Il{w|e",
+          "Jis1wd\"\\",
+          "$e5|-WL+T<",
+          "E{Z %_q*",
+          "Pt(-m2O1",
+          "WdD=LEP#",
+          "PjCN^\"H/",
+          "T'Q @4b-",
+          "m?<z=Qt*@",
+          "n<.~u9,2"
+        ]
+      }
+    },
+    {
+      "index": 11,
+      "payload_path": "payloadv2/payload.011",
+      "payload_present": true,
+      "payload_size": 195008494,
+      "target_size": 248569856,
+      "ecc_path": "payloadv2/payload.011.ecc",
+      "ecc_size": 664128,
+      "classification": {
+        "path": "payloadv2/payload.011",
+        "size": 195008494,
+        "magic": "pbzx",
+        "head_hex": "70627a78000000000080000000000000008000000000000000528e18fd377a585a000000ff12d94104c0da9bca028080",
+        "entropy_first_mib": 7.99981,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "x;hG4{Ub",
+          "W5s{B\\`9H",
+          "Z@P@E&pOh",
+          "hC7S =`!",
+          "n>\"m!q_E",
+          "ht>AM8Tl",
+          "i0f&czvs",
+          "pOYU)/&V",
+          "e7zP9jg,",
+          "X9)8|}XP{"
+        ]
+      }
+    },
+    {
+      "index": 12,
+      "payload_path": "payloadv2/payload.012",
+      "payload_present": true,
+      "payload_size": 221431712,
+      "target_size": 259710976,
+      "ecc_path": "payloadv2/payload.012.ecc",
+      "ecc_size": 658120,
+      "classification": {
+        "path": "payloadv2/payload.012",
+        "size": 221431712,
+        "magic": "pbzx",
+        "head_hex": "70627a780000000000800000000000000080000000000000006b7ac0fd377a585a000000ff12d94104c082f5ad038080",
+        "entropy_first_mib": 7.99913,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "&&~s mu-",
+          "(VA(#2JVgi",
+          "pR2~M4\\\\",
+          "&hX_5*0.",
+          "Ax`{is+h",
+          "HC#:nT1|<",
+          "7Wp;3.yD~",
+          "wyy*E9}Uv",
+          "P|cYc8~l9Td",
+          "rYT9F9\\6"
+        ]
+      }
+    },
+    {
+      "index": 13,
+      "payload_path": "payloadv2/payload.013",
+      "payload_present": true,
+      "payload_size": 173981508,
+      "target_size": 260792320,
+      "ecc_path": "payloadv2/payload.013.ecc",
+      "ecc_size": 716300,
+      "classification": {
+        "path": "payloadv2/payload.013",
+        "size": 173981508,
+        "magic": "pbzx",
+        "head_hex": "70627a780000000000800000000000000080000000000000003f3c98fd377a585a000000ff12d94104c0dcf8fc018080",
+        "entropy_first_mib": 7.99983,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "Crli+ZqT",
+          "9Ks`|1dE@",
+          "-v$l))\\#",
+          "@+B6-wj|",
+          "e=t*?[7b",
+          "-6T~bv:ZE@:",
+          "YfB'# 49",
+          "(S?a1r/m",
+          "qWiSmF0V"
+        ]
+      }
+    },
+    {
+      "index": 14,
+      "payload_path": "payloadv2/payload.014",
+      "payload_present": true,
+      "payload_size": 193187828,
+      "target_size": 253829120,
+      "ecc_path": "payloadv2/payload.014.ecc",
+      "ecc_size": 656100,
+      "classification": {
+        "path": "payloadv2/payload.014",
+        "size": 193187828,
+        "magic": "pbzx",
+        "head_hex": "70627a780000000000800000000000000080000000000000005240d8fd377a585a000000ff12d94104c09a81c9028080",
+        "entropy_first_mib": 7.99982,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "D/?NKGo/",
+          "\"5xI_jQq",
+          "n^wal5r8",
+          "}=T&!$4Z'",
+          "UD10F,)nU1",
+          "#4\\p*RbJ",
+          "5~(/^H`I",
+          "_X%Ky5[I}",
+          "F,iL,cYd)0",
+          "3l&x.zBb'"
+        ]
+      }
+    },
+    {
+      "index": 15,
+      "payload_path": "payloadv2/payload.015",
+      "payload_present": true,
+      "payload_size": 210223812,
+      "target_size": 260882432,
+      "ecc_path": "payloadv2/payload.015.ecc",
+      "ecc_size": 659556,
+      "classification": {
+        "path": "payloadv2/payload.015",
+        "size": 210223812,
+        "magic": "pbzx",
+        "head_hex": "70627a780000000000800000000000000080000000000000006bf58cfd377a585a000000ff12d94104c0cdeaaf038080",
+        "entropy_first_mib": 7.99984,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "8|!4LX&w",
+          "S-}'qbAy",
+          "=zWxJ`2/mG",
+          "M3<<6l4W",
+          "Q:6'X^F\"h",
+          "ZVyw2plT",
+          "\\qTYSEMQ",
+          "A_pCr/7z",
+          "*)&o3[lb",
+          "7iz-u{o?"
+        ]
+      }
+    },
+    {
+      "index": 16,
+      "payload_path": "payloadv2/payload.016",
+      "payload_present": true,
+      "payload_size": 157066752,
+      "target_size": 259944448,
+      "ecc_path": "payloadv2/payload.016.ecc",
+      "ecc_size": 952448,
+      "classification": {
+        "path": "payloadv2/payload.016",
+        "size": 157066752,
+        "magic": "pbzx",
+        "head_hex": "70627a780000000000800000000000000080000000000000002298e8fd377a585a000000ff12d94104c0a9b18a018080",
+        "entropy_first_mib": 7.99983,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "8`L5LCLR",
+          "jDUCd-Nx",
+          "\"4TnwkaCv",
+          "{<pj5*GJg",
+          "$M|DnG=-",
+          "@ru#Fj=T",
+          "?sP>9a$yW",
+          "Q3kf]YQU",
+          "sF8EQ;xT",
+          "_Zq5k\"s%"
+        ]
+      }
+    },
+    {
+      "index": 17,
+      "payload_path": "payloadv2/payload.017",
+      "payload_present": true,
+      "payload_size": 179658008,
+      "target_size": 259543040,
+      "ecc_path": "payloadv2/payload.017.ecc",
+      "ecc_size": 885764,
+      "classification": {
+        "path": "payloadv2/payload.017",
+        "size": 179658008,
+        "magic": "pbzx",
+        "head_hex": "70627a78000000000080000000000000008000000000000000480f44fd377a585a000000ff12d94104c0869ea0028080",
+        "entropy_first_mib": 7.99985,
+        "contains_pbzx": true,
+        "strings_sample": [
+          ",AGizF&/2",
+          "9$\"y^.Gb",
+          "]Kys7!FU",
+          ",W_E%>tG",
+          "MPdK5SNv",
+          "Qj/;/3|X",
+          "HXH{C:d\\e",
+          "sZ2JLI!N",
+          ":A M#_xE",
+          "%kEIo!hD"
+        ]
+      }
+    },
+    {
+      "index": 18,
+      "payload_path": "payloadv2/payload.018",
+      "payload_present": true,
+      "payload_size": 184900848,
+      "target_size": 261971968,
+      "ecc_path": "payloadv2/payload.018.ecc",
+      "ecc_size": 904376,
+      "classification": {
+        "path": "payloadv2/payload.018",
+        "size": 184900848,
+        "magic": "pbzx",
+        "head_hex": "70627a7800000000008000000000000000800000000000000036a120fd377a585a000000ff12d94104c0e4c1da018080",
+        "entropy_first_mib": 7.99983,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "@W?C<w,=A",
+          "t KSN|s`7",
+          "GRuGp6C_0bW",
+          "|3Mz:n`*",
+          "n,f*M#W wJyRgU",
+          "}j)'vA':",
+          "oqkSy^9U",
+          "@py$1K[J",
+          "~?Eh(7!Qf",
+          "f7-%a]dW"
+        ]
+      }
+    },
+    {
+      "index": 19,
+      "payload_path": "payloadv2/payload.019",
+      "payload_present": true,
+      "payload_size": 187528188,
+      "target_size": 260067328,
+      "ecc_path": "payloadv2/payload.019.ecc",
+      "ecc_size": 696760,
+      "classification": {
+        "path": "payloadv2/payload.019",
+        "size": 187528188,
+        "magic": "pbzx",
+        "head_hex": "70627a780000000000800000000000000080000000000000003fb114fd377a585a000000ff12d94104c0d5e1fe018080",
+        "entropy_first_mib": 7.99983,
+        "contains_pbzx": true,
+        "strings_sample": [
+          ".q]OLr'H",
+          "Q&&%#vT@Sf",
+          "ux(v;f#L[r!",
+          "&6l9BuSV",
+          "u|O[`.rh=,",
+          "M^<<i*z9!\"&",
+          "1it v!wF",
+          "4{bU2gE_1",
+          "|,0$E47N!1#",
+          "A/]PSmY~n:g"
+        ]
+      }
+    },
+    {
+      "index": 20,
+      "payload_path": "payloadv2/payload.020",
+      "payload_present": true,
+      "payload_size": 200286276,
+      "target_size": 259596288,
+      "ecc_path": "payloadv2/payload.020.ecc",
+      "ecc_size": 817212,
+      "classification": {
+        "path": "payloadv2/payload.020",
+        "size": 200286276,
+        "magic": "pbzx",
+        "head_hex": "70627a78000000000080000000000000008000000000000000587e18fd377a585a000000ff12d94104c0dafbe1028080",
+        "entropy_first_mib": 7.99958,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "3Knf(*xC",
+          "`5P3xwS_&8",
+          "w!/p+T`/>u",
+          "Zr)#mT~~{",
+          "#eyXT9`x",
+          "ToBV&AkC",
+          "51meS$&]}",
+          "P#B*dEMa",
+          "^]WRe*#}",
+          "m\\ Vkvx:"
+        ]
+      }
+    },
+    {
+      "index": 21,
+      "payload_path": "payloadv2/payload.021",
+      "payload_present": true,
+      "payload_size": 178883392,
+      "target_size": 261840896,
+      "ecc_path": "payloadv2/payload.021.ecc",
+      "ecc_size": 798764,
+      "classification": {
+        "path": "payloadv2/payload.021",
+        "size": 178883392,
+        "magic": "pbzx",
+        "head_hex": "70627a780000000000800000000000000080000000000000001b7870fd377a585a000000ff12d94104c0b1f06d808080",
+        "entropy_first_mib": 7.99983,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "\"vGO\"l00",
+          "{yip#VJW",
+          "$oRcpo!f.",
+          "sRJ4hHDa",
+          "GU/H1QM1bz",
+          "[WG8^Tpz`",
+          "z\\}~\\\\9o",
+          "'q.^=u=-",
+          "ntELi_sn",
+          "u$=SZh(e"
+        ]
+      }
+    },
+    {
+      "index": 22,
+      "payload_path": "payloadv2/payload.022",
+      "payload_present": true,
+      "payload_size": 180814716,
+      "target_size": 259985408,
+      "ecc_path": "payloadv2/payload.022.ecc",
+      "ecc_size": 857764,
+      "classification": {
+        "path": "payloadv2/payload.022",
+        "size": 180814716,
+        "magic": "pbzx",
+        "head_hex": "70627a78000000000080000000000000008000000000000000068f34fd377a585a000000ff12d94104c0f79d1a808080",
+        "entropy_first_mib": 7.99983,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "gbzcO97V\\!)",
+          "+vIXsOr;8",
+          "CIssZ4]^e",
+          "DPhkV^^mAm",
+          ":hj.wZrQI",
+          "]$g{<,(:",
+          "'\\1b$eFN",
+          ")1 fK=,7",
+          "PET}`{Sw6",
+          "@cjtUuwz1"
+        ]
+      }
+    },
+    {
+      "index": 23,
+      "payload_path": "payloadv2/payload.023",
+      "payload_present": true,
+      "payload_size": 176801648,
+      "target_size": 261246976,
+      "ecc_path": "payloadv2/payload.023.ecc",
+      "ecc_size": 830180,
+      "classification": {
+        "path": "payloadv2/payload.023",
+        "size": 176801648,
+        "magic": "pbzx",
+        "head_hex": "70627a780000000000800000000000000080000000000000004bdadcfd377a585a000000ff12d94104c0a0b5af028080",
+        "entropy_first_mib": 7.99985,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "!aZaE*2x",
+          "B@'uA':vE",
+          "AJF::j2<",
+          "V~Df}~9-",
+          "/ PJHgGa",
+          "Pl<a\\j,D",
+          "nR1&BQ'~",
+          "'_ iP8a ",
+          "He~P>sHv",
+          "~AFLDRAr5"
+        ]
+      }
+    },
+    {
+      "index": 24,
+      "payload_path": "payloadv2/payload.024",
+      "payload_present": true,
+      "payload_size": 168069160,
+      "target_size": 260919296,
+      "ecc_path": "payloadv2/payload.024.ecc",
+      "ecc_size": 891916,
+      "classification": {
+        "path": "payloadv2/payload.024",
+        "size": 168069160,
+        "magic": "pbzx",
+        "head_hex": "70627a7800000000008000000000000000800000000000000031f9e8fd377a585a000000ff12d94104c0a9f3c7018080",
+        "entropy_first_mib": 7.99961,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "fq-*]ba(",
+          "D>/I'r[T[",
+          "+pSfs]1q",
+          "{[pkzx&T9St",
+          "fYn- xEeH",
+          "Qz'S,3,A",
+          "LppKE+)g0",
+          "\\jz,(4.@",
+          "i#5r\"kFx",
+          "o$ye{I*\"?"
+        ]
+      }
+    },
+    {
+      "index": 25,
+      "payload_path": "payloadv2/payload.025",
+      "payload_present": true,
+      "payload_size": 184340108,
+      "target_size": 262025216,
+      "ecc_path": "payloadv2/payload.025.ecc",
+      "ecc_size": 901828,
+      "classification": {
+        "path": "payloadv2/payload.025",
+        "size": 184340108,
+        "magic": "pbzx",
+        "head_hex": "70627a78000000000080000000000000008000000000000000745d18fd377a585a000000ff12d94104c0dbb9d1038080",
+        "entropy_first_mib": 7.99221,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "0|\"uIk-\\e'",
+          "3I@B:ds!",
+          "'s9Zs385",
+          "4' w]7?KG",
+          "DhoA\\F7@",
+          ";u?9E/^i",
+          " (2ie5oW@",
+          "=Al<]$7zd\\O",
+          "K!t;;o?W",
+          "tXU?g|)~"
+        ]
+      }
+    },
+    {
+      "index": 26,
+      "payload_path": "payloadv2/payload.026",
+      "payload_present": true,
+      "payload_size": 164155904,
+      "target_size": 261578752,
+      "ecc_path": "payloadv2/payload.026.ecc",
+      "ecc_size": 855172,
+      "classification": {
+        "path": "payloadv2/payload.026",
+        "size": 164155904,
+        "magic": "pbzx",
+        "head_hex": "70627a78000000000080000000000000008000000000000000295330fd377a585a000000ff12d94104c0f3a5a5018080",
+        "entropy_first_mib": 7.99981,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "=Vp=LCiKzg",
+          "Y%bQVrvf",
+          "i!'F()mE",
+          "0W6P1Ge`pI",
+          "y-c\\2pe?",
+          "Z!rYKl-J",
+          "O>yA?f:W",
+          "m(Qt[Z$R",
+          "$^=2*=.N",
+          "JBBkv4\"n"
+        ]
+      }
+    },
+    {
+      "index": 27,
+      "payload_path": "payloadv2/payload.027",
+      "payload_present": true,
+      "payload_size": 161135988,
+      "target_size": 261488640,
+      "ecc_path": "payloadv2/payload.027.ecc",
+      "ecc_size": 1015888,
+      "classification": {
+        "path": "payloadv2/payload.027",
+        "size": 161135988,
+        "magic": "pbzx",
+        "head_hex": "70627a780000000000800000000000000080000000000000005af434fd377a585a000000ff12d94104c0f5e7eb028080",
+        "entropy_first_mib": 7.99276,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "A.~JeiJ(|d",
+          "yh/HeT6O1",
+          "WkS2\"Px3P",
+          "k{:j:N}B",
+          "vC;m9>6f",
+          "q>Un~vc7 ",
+          "]23|`nnG",
+          "3=`ccUsM",
+          "\"WVcf\\8[",
+          "-<FUFz}="
+        ]
+      }
+    },
+    {
+      "index": 28,
+      "payload_path": "payloadv2/payload.028",
+      "payload_present": true,
+      "payload_size": 192966988,
+      "target_size": 261652480,
+      "ecc_path": "payloadv2/payload.028.ecc",
+      "ecc_size": 668944,
+      "classification": {
+        "path": "payloadv2/payload.028",
+        "size": 192966988,
+        "magic": "pbzx",
+        "head_hex": "70627a78000000000080000000000000008000000000000000219290fd377a585a000000ff12d94104c0d4a486018080",
+        "entropy_first_mib": 7.99981,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "5\\^)aXd#",
+          "9SJG,-or",
+          "HD\"{tsC3",
+          "kb=~US%>",
+          "xmXtX/P7",
+          "T~0{wt-Asw",
+          "V{fo2V\\oEr",
+          "H6@|{*t<",
+          ".A+/TSI=",
+          "l?q(OXp=f"
+        ]
+      }
+    },
+    {
+      "index": 29,
+      "payload_path": "payloadv2/payload.029",
+      "payload_present": true,
+      "payload_size": 158488380,
+      "target_size": 262070272,
+      "ecc_path": "payloadv2/payload.029.ecc",
+      "ecc_size": 934304,
+      "classification": {
+        "path": "payloadv2/payload.029",
+        "size": 158488380,
+        "magic": "pbzx",
+        "head_hex": "70627a780000000000800000000000000080000000000000002cd738fd377a585a000000ff12d94104c0f9adb3018080",
+        "entropy_first_mib": 7.99981,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "\\RW-|^Yfg",
+          "|T,y(ho0",
+          "6Uy<&Vug",
+          "z]~ c3,,",
+          "&qDzMDpQ",
+          "iKeu<2)Y",
+          "-v@M{2b3",
+          "cae?Z)L.m",
+          "6J#j>h(]",
+          "/cn:Y,%++"
+        ]
+      }
+    },
+    {
+      "index": 30,
+      "payload_path": "payloadv2/payload.030",
+      "payload_present": true,
+      "payload_size": 187627460,
+      "target_size": 261804032,
+      "ecc_path": "payloadv2/payload.030.ecc",
+      "ecc_size": 930100,
+      "classification": {
+        "path": "payloadv2/payload.030",
+        "size": 187627460,
+        "magic": "pbzx",
+        "head_hex": "70627a780000000000800000000000000080000000000000001f8fa8fd377a585a000000ff12d94104c0e99e7e808080",
+        "entropy_first_mib": 7.99984,
+        "contains_pbzx": true,
+        "strings_sample": [
+          " h>tg&Tv",
+          "-$8+sXi/",
+          "eo}qWh:H",
+          "g[dp_\"kY",
+          "o(8P]W+q",
+          ".MmM<Qx2",
+          "mY\"f<7\\w",
+          "oZ [}7[b",
+          "*E}_WY5#",
+          "Y<R' q#|"
+        ]
+      }
+    },
+    {
+      "index": 31,
+      "payload_path": "payloadv2/payload.031",
+      "payload_present": true,
+      "payload_size": 150404440,
+      "target_size": 262029312,
+      "ecc_path": "payloadv2/payload.031.ecc",
+      "ecc_size": 1024372,
+      "classification": {
+        "path": "payloadv2/payload.031",
+        "size": 150404440,
+        "magic": "pbzx",
+        "head_hex": "70627a78000000000080000000000000008000000000000000280f84fd377a585a000000ff12d94104c0c69ea0018080",
+        "entropy_first_mib": 7.99982,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "A# (CKF@rB",
+          "E\"Z:!}8%",
+          "IjMUNvEzr",
+          "RO:97@!J",
+          ")i^Z\\*e `",
+          "y.5^G>JI3",
+          "U\"t=_6!&",
+          "&6^vH]8+",
+          "{ilPm<FexA",
+          "}]L|~UFB"
+        ]
+      }
+    },
+    {
+      "index": 32,
+      "payload_path": "payloadv2/payload.032",
+      "payload_present": true,
+      "payload_size": 167315532,
+      "target_size": 262078464,
+      "ecc_path": "payloadv2/payload.032.ecc",
+      "ecc_size": 1173968,
+      "classification": {
+        "path": "payloadv2/payload.032",
+        "size": 167315532,
+        "magic": "pbzx",
+        "head_hex": "70627a780000000000800000000000000080000000000000002fb308fd377a585a000000ff12d94104c0c9e5be018080",
+        "entropy_first_mib": 7.99975,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "OTq[&g|[",
+          ")ILJg(ib",
+          "r::JWny`",
+          "|vL^t\\L6",
+          "[P~I4Ll{",
+          "kEq{c'.$",
+          "H'RU~.!?",
+          "2syTZ}M*"
+        ]
+      }
+    },
+    {
+      "index": 33,
+      "payload_path": "payloadv2/payload.033",
+      "payload_present": true,
+      "payload_size": 163186732,
+      "target_size": 262103040,
+      "ecc_path": "payloadv2/payload.033.ecc",
+      "ecc_size": 1387356,
+      "classification": {
+        "path": "payloadv2/payload.033",
+        "size": 163186732,
+        "magic": "pbzx",
+        "head_hex": "70627a7800000000008000000000000000800000000000000022a0f8fd377a585a000000ff12d94104c0bbc18a018080",
+        "entropy_first_mib": 7.99976,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "F0|_npjC",
+          "`<;%*R|F",
+          "r`]_vIPS[",
+          ";`h-$w(b",
+          "Vy~LNyL-",
+          "Kup;W{_/",
+          "]bOQ=4MV",
+          "AjWs!Wrb",
+          "E,_Rfbf'",
+          "31#rZ^*~$"
+        ]
+      }
+    },
+    {
+      "index": 34,
+      "payload_path": "payloadv2/payload.034",
+      "payload_present": true,
+      "payload_size": 111854120,
+      "target_size": 262139904,
+      "ecc_path": "payloadv2/payload.034.ecc",
+      "ecc_size": 2244380,
+      "classification": {
+        "path": "payloadv2/payload.034",
+        "size": 111854120,
+        "magic": "pbzx",
+        "head_hex": "70627a780000000000800000000000000080000000000000001e3e30fd377a585a000000ff12d94104c0f3fb78808080",
+        "entropy_first_mib": 7.99985,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "R9W8?43_k*-",
+          "[cIgisV\\",
+          "hcgg;T?[9[",
+          "wQ.([};_Um",
+          "%k>h9'^JW",
+          "Q[Ws2UR9",
+          "t.a1?.LM ",
+          "_Mw$b,]?",
+          "mgX%zv]V)"
+        ]
+      }
+    },
+    {
+      "index": 35,
+      "payload_path": "payloadv2/payload.035",
+      "payload_present": true,
+      "payload_size": 40801132,
+      "target_size": 262144000,
+      "ecc_path": "payloadv2/payload.035.ecc",
+      "ecc_size": 3718948,
+      "classification": {
+        "path": "payloadv2/payload.035",
+        "size": 40801132,
+        "magic": "pbzx",
+        "head_hex": "70627a780000000000800000000000000080000000000000001062f0fd377a585a000000ff12d94104c0b1c541808080",
+        "entropy_first_mib": 7.99983,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "4?LwV!e2",
+          "A#Os^:D[<",
+          "jxh,]fl^",
+          "}RU5Ag$9",
+          "SZ]rk[twp",
+          "H;\\nryo@",
+          "p*pjtmPj",
+          "$w+0sf5Ip",
+          "Y\"H2[)6jT ",
+          "Q_%m_pkN"
+        ]
+      }
+    },
+    {
+      "index": 36,
+      "payload_path": "payloadv2/payload.036",
+      "payload_present": true,
+      "payload_size": 16568804,
+      "target_size": 262144000,
+      "ecc_path": "payloadv2/payload.036.ecc",
+      "ecc_size": 4247264,
+      "classification": {
+        "path": "payloadv2/payload.036",
+        "size": 16568804,
+        "magic": "pbzx",
+        "head_hex": "70627a78000000000080000000000000008000000000000000187488fd377a585a000000ff12d94104c0c9e861808080",
+        "entropy_first_mib": 7.99983,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "1mFGC*:K",
+          "MPfNroqL",
+          "w={L?h$r",
+          "a'4MZ?WE#",
+          "2afM/^!<",
+          " L{e9YZ6.",
+          "BbpO1-wI",
+          "!w~0t@-jMT",
+          "W7b7iS1$t",
+          "b\"sn0nv."
+        ]
+      }
+    },
+    {
+      "index": 37,
+      "payload_path": "payloadv2/payload.037",
+      "payload_present": true,
+      "payload_size": 14369508,
+      "target_size": 222310400,
+      "ecc_path": "payloadv2/payload.037.ecc",
+      "ecc_size": 3125036,
+      "classification": {
+        "path": "payloadv2/payload.037",
+        "size": 14369508,
+        "magic": "pbzx",
+        "head_hex": "70627a7800000000008000000000000000800000000000000021d454fd377a585a000000ff12d94104c096a887018080",
+        "entropy_first_mib": 7.99982,
+        "contains_pbzx": true,
+        "strings_sample": [
+          "{[AC{g/#",
+          "QgUctTxv",
+          "ZH4wR(p5",
+          "8&mctJZ\\",
+          "SIi[=VY~G",
+          ">aQ{DtL=|",
+          "!^5$;VIg",
+          "^*&C^=7\"8",
+          "z>jzo#%>",
+          "+p:)iNB<"
+        ]
+      }
+    }
+  ],
+  "payload_decode": {
+    "enabled": false,
+    "decoded_count": 0,
+    "matching_target_count": 0,
+    "mismatching_target_count": 0,
+    "entries": []
+  },
+  "decoded_stream_prefix": {
+    "requested_prefix_bytes": 1048576,
+    "captured_prefix_bytes": 1048576,
+    "shards_used": [
+      {
+        "index": 0,
+        "payload_path": "payloadv2/payload.000",
+        "decoded_size": 14288777
+      }
+    ],
+    "total_decoded_bytes_processed": 14288777,
+    "prefix_magic": "binary",
+    "prefix_head_hex": "5941413139005459503144504154500000554944310047494431004d4f4432ed01464c4734000010004d544d54362aa06800000000fcfb5010594141313d0054595031465041545005002e66696c65554944310047494431504d4f4432000046",
+    "prefix_strings_sample": [
+      "TYP1DPATP",
+      "TYP1FPATP",
+      ".fileUID1",
+      "GID1PMOD2",
+      ".nofollowUID1",
+      ".resolveUID1",
+      ".volUID1",
+      "SystemUID1",
+      "com.apple.rootless",
+      "System/.localizedUID1",
+      "System/ApplicationsUID1",
+      "TYP1DPATP!",
+      "System/Applications/App Store.appUID1",
+      "TYP1DPATP*",
+      "System/Applications/App Store.app/ContentsUID1",
+      "TYP1DPATP0",
+      "System/Applications/App Store.app/Contents/MacOSUID1",
+      "TYP1FPATP2",
+      "System/Applications/App Store.app/Contents/PkgInfoUID1",
+      "APPL????YAA1s",
+      "TYP1DPATP2",
+      "System/Applications/App Store.app/Contents/PlugInsUID1",
+      "Lct*FLI4",
+      "TYP1DPATPJ",
+      "System/Applications/App Store.app/Contents/PlugIns/DockTile.docktilepluginUID1",
+      "TYP1DPATPS",
+      "System/Applications/App Store.app/Contents/PlugIns/DockTile.docktileplugin/ContentsUID1",
+      "TYP1DPATPY",
+      "System/Applications/App Store.app/Contents/PlugIns/DockTile.docktileplugin/Contents/MacOSUID1",
+      "TYP1DPATPb"
+    ],
+    "signatures": {
+      "starts_with_bxdiff": false,
+      "starts_with_pbzx": false,
+      "starts_with_xz": false,
+      "contains_koly": false,
+      "contains_apfs": false,
+      "contains_hfs": false,
+      "contains_cpio_magic": false,
+      "contains_tar_ustar": false,
+      "contains_xml": false
+    },
+    "output_path": "/tmp/payloadv2-decoded-prefix.bin"
+  },
+  "runtime_artifacts": {
+    "Restore/BaseSystem.chunklist": {
+      "present": true,
+      "path": "Restore/BaseSystem.chunklist",
+      "size": 4252,
+      "magic": "binary",
+      "head_hex": "434e4b4c24000000010101006e0000000000000024000000000000009c0f0000000000000000a0007d7d5624da30eb35",
+      "entropy_first_mib": 7.61286,
+      "strings_sample": []
+    },
+    "boot/Firmware/BaseSystem.dmg.x86.trustcache": {
+      "present": true,
+      "path": "boot/Firmware/BaseSystem.dmg.x86.trustcache",
+      "size": 44471,
+      "magic": "binary",
+      "head_hex": "3082adb31604494d34501604786274631601310482ada002000000d283f184455c4179ac352778cb13b7ff3b07000000",
+      "entropy_first_mib": 7.4976,
+      "strings_sample": [
+        "1]`Wr~xh",
+        "ompQ`SO[",
+        "h~^kFTu%X",
+        ",^;4c+JR"
+      ]
+    },
+    "payloadv2/basesystem_patches/x86_64BaseSystem.dmg": {
+      "present": true,
+      "path": "payloadv2/basesystem_patches/x86_64BaseSystem.dmg",
+      "size": 639661864,
+      "magic": "bxdiff",
+      "head_hex": "425844494646353000000000000000008118a144000000000000000000000000ec76202600000000f0201a4b27be1bbf",
+      "entropy_first_mib": 7.99978,
+      "contains_bxdiff": true,
+      "contains_pbzx": true,
+      "strings_sample": [
+        "BXDIFF50",
+        "6+BwkZaF",
+        "Br~$h %>HyOn",
+        "S*!TOa5[",
+        "pOjw#2GVd[",
+        "Lo\\pJ\"qk",
+        "X-(Mv1N14",
+        "Z8v6%|/9",
+        "X+dQg8\\F",
+        "Z&lYy@4^"
+      ]
+    },
+    "payloadv2/basesystem_patches/x86_64BaseSystem.dmg.ecc": {
+      "present": true,
+      "path": "payloadv2/basesystem_patches/x86_64BaseSystem.dmg.ecc",
+      "size": 2389466,
+      "magic": "binary",
+      "head_hex": "42584543433031308118a14400000000f0201a4b27be1bbfa9a1b3291c686263d06e5814010000000040000000000000",
+      "entropy_first_mib": 7.49128,
+      "strings_sample": [
+        "BXECC010",
+        "0|:\"LT6|",
+        "H/?SZH0B",
+        "K?6]j<4!|",
+        "'8^R@n@b,"
+      ]
+    },
+    "payloadv2/basesystem_patches/arm64eBaseSystem.dmg": {
+      "present": true,
+      "path": "payloadv2/basesystem_patches/arm64eBaseSystem.dmg",
+      "size": 492009328,
+      "magic": "bxdiff",
+      "head_hex": "425844494646353000000000000000009826436f0000000000000000000000003477531d000000009778f3ad6aa29dcb",
+      "entropy_first_mib": 7.99977,
+      "contains_bxdiff": true,
+      "contains_pbzx": true,
+      "strings_sample": [
+        "BXDIFF50",
+        "*^'BM>F2(",
+        "lo]7#Yy`",
+        "mrc)v{9U'",
+        "o*Zuk%(7?",
+        "X~a28!VF\"",
+        ">fC_%yszo",
+        "]%PwRpyZ",
+        "~7V$X4|>F"
+      ]
+    }
+  },
+  "hypotheses": [
+    "Shard order is explicit in payload_chunks.txt and runs sequentially from 0 to 37.",
+    "Every payload.* sample starts as pbzx, so direct byte concatenation of the compressed files is unlikely to produce a bootable image without an unwrap step.",
+    "The x86_64 BaseSystem candidate starts with BXDIFF50 and also contains pbzx, which identifies it as a patch artifact rather than a directly stageable DMG.",
+    "BaseSystem integrity metadata exists outside payloadv2, which supports a reconstruction model of canonical image + patch layer + trust metadata.",
+    "fixup.manifest expands from pbzx into a large binary metadata stream, so it likely drives content mapping rather than serving as a plain-text manifest.",
+    "links.txt is plain text and appears to encode source/target path pairs, which suggests the reconstructed image is built as a filesystem tree rather than a simple monolithic blob."
+  ]
+}

@@ -1,0 +1,97 @@
+# Milestones
+
+This document captures the project milestones that have been demonstrated so far, along with the technical boundaries that still remain.
+
+## Milestone 1: Payload Rebuild Core Proven
+
+Canonical statement:
+
+> ban-grapple has demonstrated successful reconstruction of a real macOS Ventura 13.7.8 system tree from Apple payloadv2 shards via deterministic shard ordering, PBZX decode, and YAA replay.
+
+What was demonstrated:
+
+- Apple `payloadv2` shards were decoded in Apple-provided order using `payload_chunks.txt`
+- each shard was decoded from `pbzx`
+- the unified decoded stream was parsed as YAA
+- the YAA stream was replayed into a concrete filesystem tree
+- the result contained real macOS layout semantics and recognizable system content
+
+Observed proof points from the completed real-data run on the external drive:
+
+- reconstructed tree size: about `27G`
+- materialized records: `356,866`
+- resolved OS identity from `SystemVersion.plist`:
+  - `ProductVersion`: `13.7.8`
+  - `ProductBuildVersion`: `22H730`
+- the tree contained real app bundles, system libraries, link structure, and macOS-shaped layout
+
+What this milestone proves:
+
+- shard ordering is operationally correct
+- `pbzx` decode is operationally correct enough for full replay
+- YAA parse and replay semantics are operationally correct enough to reconstruct the system tree
+- the payload reconstruction model is causally real, not hypothetical
+
+What this milestone does not prove:
+
+- bootability
+- exact fidelity for every metadata class
+- BaseSystem integration or patch synthesis
+- final image composition
+- Apple boot-chain acceptance
+
+## Milestone 2: First Metadata Fidelity Pass
+
+After the payload rebuild proof, replay was extended to apply recorded metadata during materialization.
+
+Implemented in this phase:
+
+- file mode replay during extraction
+- deferred directory mode replay after extraction completes
+- best-effort ownership replay using `lchown(2)`
+- rebuild audit command for comparing replay metadata against the realized tree
+
+The directory-mode deferral mattered because applying restrictive directory permissions immediately during replay caused the builder to lock itself out of later children. That bug was reproduced, diagnosed, and fixed.
+
+## Milestone 3: Audit on Metadata-Aware Rebuild
+
+A fresh rebuild (`rebuilt-tree-v3`) was completed after the directory-mode fix and reached the same structural endpoint as the original proof run.
+
+Observed results:
+
+- rebuilt tree size: about `27G`
+- replay records: `356,866`
+- xattr sidecars accounted for: `653 / 653`
+- path coverage remained structurally complete enough to compare against replay metadata
+- mode mismatches dropped from `356,723` on the original replay to `10,047` on the metadata-aware replay
+
+This proves the first fidelity pass materially improved the realized tree instead of merely changing instrumentation.
+
+## Current Phase Boundary
+
+The project state is now:
+
+1. payload rebuild core: done
+2. first metadata fidelity pass: done
+3. replay-gap classification: in progress
+4. BaseSystem integration: not done
+5. image composition: not done
+6. boot validation: not done
+
+## Recommended Next Sequence
+
+The next implementation order should remain:
+
+1. metadata correctness
+2. replay-gap classification
+3. substrate integration
+4. image artifact composition
+5. boot validation
+
+Inside metadata correctness, the recommended order is:
+
+1. mode
+2. uid / gid
+3. timestamps
+4. xattrs
+5. link-edge handling

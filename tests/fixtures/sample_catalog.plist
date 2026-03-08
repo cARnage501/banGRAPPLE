@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Products</key>
+  <dict>
+    <key>001-00001</key>
+    <dict>
+      <key>ExtendedMetaInfo</key>
+      <dict>
+        <key>InstallAssistantPackageIdentifiers</key>
+        <dict>
+          <key>SharedSupport</key>
+          <string>com.apple.pkg.InstallAssistant.macOSSonoma</string>
+        </dict>
+      </dict>
+      <key>Packages</key>
+      <array>
+        <dict>
+          <key>URL</key>
+          <string>https://example.test/001-00001/InstallAssistant.pkg</string>
+          <key>Size</key>
+          <integer>123456</integer>
+          <key>IntegrityDataURL</key>
+          <string>https://example.test/001-00001/InstallAssistant.pkg.integrity</string>
+        </dict>
+        <dict>
+          <key>URL</key>
+          <string>https://example.test/001-00001/BaseSystem.dmg</string>
+          <key>Size</key>
+          <integer>654321</integer>
+        </dict>
+      </array>
+      <key>ServerMetadataURL</key>
+      <string>https://example.test/001-00001/ServerMetadata.plist</string>
+      <key>PostDate</key>
+      <date>2024-03-07T18:00:00Z</date>
+      <key>Distributions</key>
+      <dict>
+        <key>English</key>
+        <string>https://example.test/001-00001/English.dist</string>
+      </dict>
+    </dict>
+    <key>001-00002</key>
+    <dict>
+      <key>Packages</key>
+      <array>
+        <dict>
+          <key>URL</key>
+          <string>https://example.test/001-00002/BridgeOS.pkg</string>
+        </dict>
+      </array>
+    </dict>
+  </dict>
+</dict>
+</plist>

@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "release": {
+    "name": "macOS Sonoma",
+    "version": "14.4",
+    "build": "23E214"
+  },
+  "distribution": {
+    "image_url": "https://example.test/images/macos-sonoma-14.4.img.zst",
+    "checksum": {
+      "algorithm": "sha256",
+      "value": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+    },
+    "format": "raw.zst",
+    "size_bytes": 987654321,
+    "created_at": "2026-03-06T00:00:00Z"
+  },
+  "provenance": {
+    "builder": "banGRAPPLE CI",
+    "source": "apple-catalog",
+    "notes": "Golden image built from official installer artifacts"
+  }
+}
