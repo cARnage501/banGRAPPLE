@@ -15,9 +15,12 @@ pub struct RebuildAuditReport {
     pub root: PathBuf,
     pub metadata_path: PathBuf,
     pub report_path: PathBuf,
+    pub contract_receipts_path: PathBuf,
+    pub broken_symlink_receipts_path: PathBuf,
     pub actual: ActualTreeSummary,
     pub replay: ReplaySummary,
     pub coverage: CoverageSummary,
+    pub broken_symlink_causes: BrokenSymlinkCauseSummary,
     pub samples: AuditSamples,
 }
 
@@ -55,7 +58,20 @@ pub struct CoverageSummary {
     pub mode_mismatches: u64,
     pub mode_host_artifacts: u64,
     pub bundle_executable_contract_missing_producers: u64,
+    pub residual_broken_symlinks: u64,
     pub inaccessible_paths: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Default)]
+pub struct BrokenSymlinkCauseSummary {
+    pub exhaustive: bool,
+    pub counts: Vec<BrokenSymlinkCauseCount>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct BrokenSymlinkCauseCount {
+    pub cause: BrokenSymlinkCause,
+    pub count: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Default)]
@@ -65,6 +81,7 @@ pub struct AuditSamples {
     pub mode_mismatches: Vec<ModeMismatchSample>,
     pub mode_host_artifacts: Vec<ModeMismatchSample>,
     pub broken_symlinks: Vec<String>,
+    pub broken_symlink_receipts: Vec<BrokenSymlinkReceipt>,
     pub bundle_executable_contract_missing_producers: Vec<BundleExecutableContractSample>,
     pub inaccessible_paths: Vec<String>,
     pub xattr_sidecars_missing: Vec<String>,
@@ -82,6 +99,87 @@ pub struct BundleExecutableContractSample {
     pub path: String,
     pub bundle: String,
     pub declared_executable: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Default)]
+pub struct ContractReceiptsReport {
+    pub bundle_executable_contract_missing_producers: Vec<BundleExecutableContractSample>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Default)]
+pub struct BrokenSymlinkReceiptsReport {
+    pub receipts: Vec<BrokenSymlinkReceipt>,
+}
+
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize,
+)]
+#[serde(rename_all = "snake_case")]
+pub enum BrokenSymlinkCause {
+    BundleExecutableContractMissingProducer,
+    FirmwareAliasMapMissingProducer,
+    LocaleAliasMapMissingProducer,
+    HostRootAbsoluteExpectedExternal,
+    CryptexRuntimeSubstrateMissing,
+    BundleStructuralAliasMissingProducer,
+    CrossTreeParentChainMissing,
+    FrameworkRelativeAliasMissingProducer,
+    BundleContractMetadataUnavailable,
+    LibraryAliasMissingProducer,
+    TemplateDataOrPairedVolumeSubstrateMissing,
+    BundleDeclaredNameMismatch,
+    PrivateRootSubstrateMissing,
+    AppleinternalExpectedExternal,
+    DataVolumeSubstrateMissing,
+    PackagingAliasMissingProducer,
+    HostOrPairedRootSubstrateMissing,
+    Unknown,
+}
+
+impl BrokenSymlinkCause {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::BundleExecutableContractMissingProducer => {
+                "bundle_executable_contract_missing_producer"
+            }
+            Self::FirmwareAliasMapMissingProducer => "firmware_alias_map_missing_producer",
+            Self::LocaleAliasMapMissingProducer => "locale_alias_map_missing_producer",
+            Self::HostRootAbsoluteExpectedExternal => "host_root_absolute_expected_external",
+            Self::CryptexRuntimeSubstrateMissing => "cryptex_runtime_substrate_missing",
+            Self::BundleStructuralAliasMissingProducer => {
+                "bundle_structural_alias_missing_producer"
+            }
+            Self::CrossTreeParentChainMissing => "cross_tree_parent_chain_missing",
+            Self::FrameworkRelativeAliasMissingProducer => {
+                "framework_relative_alias_missing_producer"
+            }
+            Self::BundleContractMetadataUnavailable => "bundle_contract_metadata_unavailable",
+            Self::LibraryAliasMissingProducer => "library_alias_missing_producer",
+            Self::TemplateDataOrPairedVolumeSubstrateMissing => {
+                "template_data_or_paired_volume_substrate_missing"
+            }
+            Self::BundleDeclaredNameMismatch => "bundle_declared_name_mismatch",
+            Self::PrivateRootSubstrateMissing => "private_root_substrate_missing",
+            Self::AppleinternalExpectedExternal => "appleinternal_expected_external",
+            Self::DataVolumeSubstrateMissing => "data_volume_substrate_missing",
+            Self::PackagingAliasMissingProducer => "packaging_alias_missing_producer",
+            Self::HostOrPairedRootSubstrateMissing => {
+                "host_or_paired_root_substrate_missing"
+            }
+            Self::Unknown => "unknown",
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct BrokenSymlinkReceipt {
+    pub path: String,
+    pub target: String,
+    pub cause: BrokenSymlinkCause,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub bundle: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub declared_executable: Option<String>,
 }
 
 #[derive(Debug)]
@@ -145,6 +243,12 @@ struct ReplayRecord {
 struct ReplayPayload {
     tag: String,
     sidecar_path: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+struct BundleContractInfo {
+    declared_executable: Option<String>,
+    has_info_plist: bool,
 }
 
 pub fn audit_rebuild(root: &Path) -> Result<RebuildAuditReport, AuditError> {
@@ -219,6 +323,9 @@ pub fn audit_rebuild(root: &Path) -> Result<RebuildAuditReport, AuditError> {
     let mut inaccessible_paths = 0u64;
     let mut bundle_contract_cache = BTreeMap::new();
     let mut bundle_executable_contract_missing_producers = 0u64;
+    let mut contract_receipts = Vec::new();
+    let mut broken_symlink_cause_counts = BTreeMap::new();
+    let mut broken_symlink_receipts = Vec::new();
     walk_actual_tree(
         root,
         root,
@@ -228,6 +335,9 @@ pub fn audit_rebuild(root: &Path) -> Result<RebuildAuditReport, AuditError> {
         &mut inaccessible_paths,
         &mut bundle_contract_cache,
         &mut bundle_executable_contract_missing_producers,
+        &mut contract_receipts,
+        &mut broken_symlink_cause_counts,
+        &mut broken_symlink_receipts,
         &mut samples,
     )?;
 
@@ -276,17 +386,51 @@ pub fn audit_rebuild(root: &Path) -> Result<RebuildAuditReport, AuditError> {
         mode_mismatches,
         mode_host_artifacts,
         bundle_executable_contract_missing_producers,
+        residual_broken_symlinks: actual
+            .broken_symlinks
+            .saturating_sub(bundle_executable_contract_missing_producers),
         inaccessible_paths,
     };
 
     let report_path = root.join("_ban_grapple_audit.json");
+    let contract_receipts_path = root.join("_ban_grapple_contract_receipts.json");
+    let broken_symlink_receipts_path = root.join("_ban_grapple_broken_symlink_receipts.json");
+    let contract_report = ContractReceiptsReport {
+        bundle_executable_contract_missing_producers: contract_receipts,
+    };
+    let contract_bytes = serde_json::to_vec_pretty(&contract_report)?;
+    fs::write(&contract_receipts_path, contract_bytes)?;
+    let broken_symlink_report = BrokenSymlinkReceiptsReport {
+        receipts: broken_symlink_receipts,
+    };
+    let broken_symlink_bytes = serde_json::to_vec_pretty(&broken_symlink_report)?;
+    fs::write(&broken_symlink_receipts_path, broken_symlink_bytes)?;
+    let mut broken_symlink_cause_counts_vec: Vec<_> = broken_symlink_cause_counts
+        .into_iter()
+        .map(|(cause, count)| BrokenSymlinkCauseCount { cause, count })
+        .collect();
+    broken_symlink_cause_counts_vec.sort_by(|left, right| {
+        right
+            .count
+            .cmp(&left.count)
+            .then_with(|| left.cause.cmp(&right.cause))
+    });
+
     let report = RebuildAuditReport {
         root: root.to_path_buf(),
         metadata_path,
         report_path: report_path.clone(),
+        contract_receipts_path,
+        broken_symlink_receipts_path,
         actual,
         replay,
         coverage,
+        broken_symlink_causes: BrokenSymlinkCauseSummary {
+            exhaustive: !broken_symlink_cause_counts_vec
+                .iter()
+                .any(|entry| entry.cause == BrokenSymlinkCause::Unknown),
+            counts: broken_symlink_cause_counts_vec,
+        },
         samples,
     };
     let bytes = serde_json::to_vec_pretty(&report)?;
@@ -323,6 +467,8 @@ fn is_internal_artifact(relative: &str) -> bool {
     relative == "_yaa_materialized.jsonl"
         || relative == "_payloadv2_decoded.yaa"
         || relative == "_ban_grapple_audit.json"
+        || relative == "_ban_grapple_contract_receipts.json"
+        || relative == "_ban_grapple_broken_symlink_receipts.json"
         || relative == "_yaa_xattrs"
         || relative.starts_with("_yaa_xattrs/")
 }
@@ -361,8 +507,11 @@ fn walk_actual_tree(
     actual: &mut ActualTreeSummary,
     actual_paths: &mut HashSet<String>,
     inaccessible_paths: &mut u64,
-    bundle_contract_cache: &mut BTreeMap<String, Option<String>>,
+    bundle_contract_cache: &mut BTreeMap<String, BundleContractInfo>,
     bundle_executable_contract_missing_producers: &mut u64,
+    contract_receipts: &mut Vec<BundleExecutableContractSample>,
+    broken_symlink_cause_counts: &mut BTreeMap<BrokenSymlinkCause, u64>,
+    broken_symlink_receipts: &mut Vec<BrokenSymlinkReceipt>,
     samples: &mut AuditSamples,
 ) -> Result<(), AuditError> {
     let entries = match fs::read_dir(current) {
@@ -423,15 +572,33 @@ fn walk_actual_tree(
                     };
                     if !resolved.exists() {
                         actual.broken_symlinks += 1;
-                        if let Some(sample) =
-                            classify_bundle_executable_contract_missing_producer(
-                                root,
-                                &path,
-                                &target,
-                                bundle_contract_cache,
-                            )?
+                        let receipt = classify_broken_symlink_cause(
+                            root,
+                            &path,
+                            &target,
+                            bundle_contract_cache,
+                        )?;
+                        *broken_symlink_cause_counts.entry(receipt.cause).or_insert(0) += 1;
+                        broken_symlink_receipts.push(receipt.clone());
+                        if samples.broken_symlink_receipts.len() < SAMPLE_LIMIT {
+                            samples.broken_symlink_receipts.push(receipt.clone());
+                        }
+                        if receipt.cause
+                            == BrokenSymlinkCause::BundleExecutableContractMissingProducer
                         {
                             *bundle_executable_contract_missing_producers += 1;
+                            let sample = BundleExecutableContractSample {
+                                path: receipt.path.clone(),
+                                bundle: receipt
+                                    .bundle
+                                    .clone()
+                                    .unwrap_or_else(|| "<unknown>".to_string()),
+                                declared_executable: receipt
+                                    .declared_executable
+                                    .clone()
+                                    .unwrap_or_else(|| "<unknown>".to_string()),
+                            };
+                            contract_receipts.push(sample.clone());
                             if samples.bundle_executable_contract_missing_producers.len()
                                 < SAMPLE_LIMIT
                             {
@@ -485,6 +652,9 @@ fn walk_actual_tree(
                 inaccessible_paths,
                 bundle_contract_cache,
                 bundle_executable_contract_missing_producers,
+                contract_receipts,
+                broken_symlink_cause_counts,
+                broken_symlink_receipts,
                 samples,
             )?;
         }
@@ -493,48 +663,72 @@ fn walk_actual_tree(
     Ok(())
 }
 
-fn classify_bundle_executable_contract_missing_producer(
+fn classify_broken_symlink_cause(
     root: &Path,
     path: &Path,
     link_target: &Path,
-    cache: &mut BTreeMap<String, Option<String>>,
-) -> Result<Option<BundleExecutableContractSample>, AuditError> {
-    let raw_target = link_target.to_string_lossy();
-    if !raw_target.contains("Versions/Current/") {
-        return Ok(None);
-    }
-
+    cache: &mut BTreeMap<String, BundleContractInfo>,
+) -> Result<BrokenSymlinkReceipt, AuditError> {
     let relative = match path.strip_prefix(root) {
         Ok(relative) => relative,
-        Err(_) => return Ok(None),
-    };
-    let leaf_name = match relative.file_name().and_then(|name| name.to_str()) {
-        Some(name) => name,
-        None => return Ok(None),
-    };
-    let bundle = match deepest_bundle_root(relative) {
-        Some(bundle) => bundle,
-        None => return Ok(None),
-    };
-
-    let bundle_key = bundle.to_string_lossy().to_string();
-    let declared = match cache.get(&bundle_key) {
-        Some(value) => value.clone(),
-        None => {
-            let parsed = load_bundle_declared_executable(root, &bundle)?;
-            cache.insert(bundle_key.clone(), parsed.clone());
-            parsed
+        Err(_) => {
+            return Ok(BrokenSymlinkReceipt {
+                path: path.display().to_string(),
+                target: link_target.display().to_string(),
+                cause: BrokenSymlinkCause::Unknown,
+                bundle: None,
+                declared_executable: None,
+            });
         }
     };
+    let relative_display = relative.display().to_string();
+    let target_display = link_target.display().to_string();
+    let leaf_name = match relative.file_name().and_then(|name| name.to_str()) {
+        Some(name) => name,
+        None => {
+            return Ok(BrokenSymlinkReceipt {
+                path: relative_display,
+                target: target_display,
+                cause: BrokenSymlinkCause::Unknown,
+                bundle: None,
+                declared_executable: None,
+            });
+        }
+    };
+    let bundle = deepest_bundle_root(relative);
+    let bundle_key = bundle
+        .as_ref()
+        .map(|bundle| bundle.to_string_lossy().to_string());
+    let bundle_info = if let Some(bundle) = bundle.as_ref() {
+        let key = bundle.to_string_lossy().to_string();
+        match cache.get(&key) {
+            Some(value) => value.clone(),
+            None => {
+                let parsed = load_bundle_contract_info(root, bundle)?;
+                cache.insert(key, parsed.clone());
+                parsed
+            }
+        }
+    } else {
+        BundleContractInfo::default()
+    };
 
-    match declared {
-        Some(executable) if executable == leaf_name => Ok(Some(BundleExecutableContractSample {
-            path: relative.display().to_string(),
-            bundle: bundle_key,
-            declared_executable: executable,
-        })),
-        _ => Ok(None),
-    }
+    let cause = classify_broken_symlink_cause_kind(
+        root,
+        &relative_display,
+        &target_display,
+        leaf_name,
+        bundle.as_deref(),
+        &bundle_info,
+    );
+
+    Ok(BrokenSymlinkReceipt {
+        path: relative_display,
+        target: target_display,
+        cause,
+        bundle: bundle_key,
+        declared_executable: bundle_info.declared_executable,
+    })
 }
 
 fn deepest_bundle_root(relative: &Path) -> Option<PathBuf> {
@@ -563,10 +757,10 @@ fn deepest_bundle_root(relative: &Path) -> Option<PathBuf> {
     deepest
 }
 
-fn load_bundle_declared_executable(
+fn load_bundle_contract_info(
     root: &Path,
     bundle: &Path,
-) -> Result<Option<String>, AuditError> {
+) -> Result<BundleContractInfo, AuditError> {
     let candidates = [
         bundle.join("Versions/A/Resources/Info.plist"),
         bundle.join("Contents/Info.plist"),
@@ -583,16 +777,119 @@ fn load_bundle_declared_executable(
         let Some(dict) = plist.as_dictionary() else {
             continue;
         };
-        let Some(executable) = dict
+        let executable = dict
             .get("CFBundleExecutable")
             .and_then(PlistValue::as_string)
-        else {
-            return Ok(None);
-        };
-        return Ok(Some(executable.to_string()));
+            .map(|value| value.to_string());
+        return Ok(BundleContractInfo {
+            declared_executable: executable,
+            has_info_plist: true,
+        });
     }
 
-    Ok(None)
+    Ok(BundleContractInfo::default())
+}
+
+fn classify_broken_symlink_cause_kind(
+    root: &Path,
+    relative: &str,
+    target: &str,
+    leaf_name: &str,
+    bundle: Option<&Path>,
+    bundle_info: &BundleContractInfo,
+) -> BrokenSymlinkCause {
+    if target.contains("Versions/Current/") || relative.ends_with("/Versions/Current") {
+        if bundle.is_some()
+            && bundle_info.has_info_plist
+            && bundle_info
+                .declared_executable
+                .as_deref()
+                .is_some_and(|declared| declared == leaf_name)
+        {
+            return BrokenSymlinkCause::BundleExecutableContractMissingProducer;
+        }
+        if bundle.is_some() && !bundle_info.has_info_plist {
+            return BrokenSymlinkCause::BundleContractMetadataUnavailable;
+        }
+        if matches!(
+            leaf_name,
+            "PlugIns" | "Frameworks" | "XPCServices" | "Support"
+        ) || leaf_name.ends_with(".dylib")
+        {
+            return BrokenSymlinkCause::BundleStructuralAliasMissingProducer;
+        }
+        if bundle_info
+            .declared_executable
+            .as_deref()
+            .is_some_and(|declared| declared != leaf_name)
+        {
+            return BrokenSymlinkCause::BundleDeclaredNameMismatch;
+        }
+        if bundle.is_some() {
+            return BrokenSymlinkCause::BundleStructuralAliasMissingProducer;
+        }
+    }
+
+    if relative.starts_with("usr/share/firmware/wifi/") {
+        return BrokenSymlinkCause::FirmwareAliasMapMissingProducer;
+    }
+
+    if relative.starts_with("usr/share/locale/") {
+        return BrokenSymlinkCause::LocaleAliasMapMissingProducer;
+    }
+
+    if matches!(relative, "var" | "tmp" | "etc") {
+        return BrokenSymlinkCause::PrivateRootSubstrateMissing;
+    }
+
+    if relative == ".VolumeIcon.icns" || target.contains("System/Volumes/Data/") {
+        return BrokenSymlinkCause::DataVolumeSubstrateMissing;
+    }
+
+    if target.contains("System/Cryptexes/")
+        || target.contains("System/Volumes/Preboot/Cryptexes")
+        || target.starts_with("/System/Cryptexes/")
+    {
+        return BrokenSymlinkCause::CryptexRuntimeSubstrateMissing;
+    }
+
+    if target.starts_with("/AppleInternal/") {
+        return BrokenSymlinkCause::AppleinternalExpectedExternal;
+    }
+
+    if relative.starts_with("System/Library/Templates/Data/") {
+        return BrokenSymlinkCause::TemplateDataOrPairedVolumeSubstrateMissing;
+    }
+
+    if target.starts_with("/var/") || relative == "usr/share/zoneinfo" {
+        return BrokenSymlinkCause::HostOrPairedRootSubstrateMissing;
+    }
+
+    if Path::new(target).is_absolute() {
+        return BrokenSymlinkCause::HostRootAbsoluteExpectedExternal;
+    }
+
+    let target_parent = root.join(relative).parent().unwrap_or(root).join(target);
+    if !target_parent.parent().is_some_and(Path::exists) {
+        return BrokenSymlinkCause::CrossTreeParentChainMissing;
+    }
+
+    if relative.starts_with("System/Applications/") && leaf_name == "PkgInfo" {
+        return BrokenSymlinkCause::PackagingAliasMissingProducer;
+    }
+
+    if relative.starts_with("usr/lib/") || leaf_name.ends_with(".dylib") {
+        return BrokenSymlinkCause::LibraryAliasMissingProducer;
+    }
+
+    if relative.starts_with("System/Library/Frameworks/")
+        || relative.starts_with("System/Library/PrivateFrameworks/")
+        || relative.starts_with("System/iOSSupport/System/Library/")
+    {
+        return BrokenSymlinkCause::FrameworkRelativeAliasMissingProducer;
+    }
+
+    BrokenSymlinkCause::Unknown
 }
 
 fn record_inaccessible_sample(root: &Path, path: &Path, samples: &mut AuditSamples) {
@@ -608,13 +905,13 @@ fn record_inaccessible_sample(root: &Path, path: &Path, samples: &mut AuditSampl
 }
 
 #[cfg(test)]
-mod tests {
-    use std::fs;
-    use std::os::unix::fs::{PermissionsExt, symlink};
-    use std::path::PathBuf;
-    use std::time::{SystemTime, UNIX_EPOCH};
+    mod tests {
+        use std::fs;
+        use std::os::unix::fs::{PermissionsExt, symlink};
+        use std::path::PathBuf;
+        use std::time::{SystemTime, UNIX_EPOCH};
 
-    use super::audit_rebuild;
+        use super::{BrokenSymlinkCause, audit_rebuild};
 
     fn temp_dir(label: &str) -> PathBuf {
         let unique = SystemTime::now()
@@ -796,7 +1093,11 @@ mod tests {
             report.coverage.bundle_executable_contract_missing_producers,
             1
         );
+        assert!(report.broken_symlink_causes.exhaustive);
+        assert_eq!(report.broken_symlink_causes.counts[0].cause, BrokenSymlinkCause::BundleExecutableContractMissingProducer);
+        assert_eq!(report.broken_symlink_causes.counts[0].count, 1);
         assert!(report.samples.broken_symlinks.is_empty());
+        assert_eq!(report.samples.broken_symlink_receipts.len(), 1);
         assert_eq!(
             report.samples.bundle_executable_contract_missing_producers.len(),
             1

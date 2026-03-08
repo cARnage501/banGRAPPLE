@@ -312,6 +312,14 @@ fn audit_rebuild_command(args: &[String]) -> Result<(), String> {
     println!("Replay metadata: {}", report.metadata_path.display());
     println!("Audit report: {}", report.report_path.display());
     println!(
+        "Contract receipts: {}",
+        report.contract_receipts_path.display()
+    );
+    println!(
+        "Broken symlink receipts: {}",
+        report.broken_symlink_receipts_path.display()
+    );
+    println!(
         "Actual tree: directories={} files={} symlinks={} others={} bytes={} broken_symlinks={}",
         report.actual.directories,
         report.actual.files,
@@ -338,14 +346,15 @@ fn audit_rebuild_command(args: &[String]) -> Result<(), String> {
         report.replay.xattr_sidecars_referenced
     );
     println!(
-        "Path coverage: replay_paths={} actual_paths={} missing_from_tree={} extra_in_tree={} mode_mismatches={} mode_host_artifacts={} bundle_executable_contract_missing_producers={}",
+        "Path coverage: replay_paths={} actual_paths={} missing_from_tree={} extra_in_tree={} mode_mismatches={} mode_host_artifacts={} bundle_executable_contract_missing_producers={} residual_broken_symlinks={}",
         report.coverage.replay_paths,
         report.coverage.actual_paths,
         report.coverage.missing_from_tree,
         report.coverage.extra_in_tree,
         report.coverage.mode_mismatches,
         report.coverage.mode_host_artifacts,
-        report.coverage.bundle_executable_contract_missing_producers
+        report.coverage.bundle_executable_contract_missing_producers,
+        report.coverage.residual_broken_symlinks
     );
 
     if !report.samples.missing_from_tree.is_empty() {
@@ -379,9 +388,39 @@ fn audit_rebuild_command(args: &[String]) -> Result<(), String> {
         }
     }
     if !report.samples.broken_symlinks.is_empty() {
-        println!("Sample broken symlinks:");
+        println!("Sample residual broken symlinks:");
         for path in &report.samples.broken_symlinks {
             println!("  {path}");
+        }
+    }
+    if !report.broken_symlink_causes.counts.is_empty() {
+        println!(
+            "Broken symlink causal classes (exhaustive={}):",
+            report.broken_symlink_causes.exhaustive
+        );
+        for entry in &report.broken_symlink_causes.counts {
+            println!("  {}={}", entry.cause.as_str(), entry.count);
+        }
+    }
+    if !report.samples.broken_symlink_receipts.is_empty() {
+        println!("Sample broken symlink cause receipts:");
+        for receipt in &report.samples.broken_symlink_receipts {
+            match (&receipt.bundle, &receipt.declared_executable) {
+                (Some(bundle), Some(executable)) => println!(
+                    "  {} target={} cause={} bundle={} declared_executable={}",
+                    receipt.path,
+                    receipt.target,
+                    receipt.cause.as_str(),
+                    bundle,
+                    executable
+                ),
+                _ => println!(
+                    "  {} target={} cause={}",
+                    receipt.path,
+                    receipt.target,
+                    receipt.cause.as_str()
+                ),
+            }
         }
     }
     if !report

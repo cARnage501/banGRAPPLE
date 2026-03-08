@@ -95,3 +95,57 @@ Inside metadata correctness, the recommended order is:
 3. timestamps
 4. xattrs
 5. link-edge handling
+
+## Milestone 4: Exhaustive Broken-Symlink Causal Taxonomy
+
+The broken-symlink audit surface was exhausted into native causal producer and substrate classes, with no unclassified remainder.
+
+Implemented in this phase:
+
+- native Rust classification of broken symlink causes in the rebuild audit
+- conservative contract receipt output for bundle executable obligations
+- native broken-symlink receipt output for causal-class inspection
+- CLI reporting of causal class counts and taxonomy exhaustiveness
+
+Observed results from the clean workstation rebuild audit:
+
+- `replay_paths=356861`
+- `actual_paths=356861`
+- `missing_from_tree=0`
+- `extra_in_tree=0`
+- `mode_mismatches=0`
+- `mode_host_artifacts=10048`
+- `bundle_executable_contract_missing_producers=1939`
+- broken-symlink causal taxonomy reported `exhaustive=true`
+
+Native causal class breakdown:
+
+- `bundle_executable_contract_missing_producer`: `1939`
+- `firmware_alias_map_missing_producer`: `1131`
+- `locale_alias_map_missing_producer`: `207`
+- `host_root_absolute_expected_external`: `55`
+- `cryptex_runtime_substrate_missing`: `48`
+- `bundle_structural_alias_missing_producer`: `18`
+- `cross_tree_parent_chain_missing`: `10`
+- `framework_relative_alias_missing_producer`: `9`
+- `bundle_contract_metadata_unavailable`: `9`
+- `library_alias_missing_producer`: `8`
+- `template_data_or_paired_volume_substrate_missing`: `6`
+- `bundle_declared_name_mismatch`: `5`
+- `private_root_substrate_missing`: `3`
+- `appleinternal_expected_external`: `3`
+- `data_volume_substrate_missing`: `1`
+- `packaging_alias_missing_producer`: `1`
+- `host_or_paired_root_substrate_missing`: `1`
+
+This milestone proves:
+
+- the broken-symlink audit surface is fully classified into causal producer and substrate classes
+- the audit now distinguishes host artifacts, explicit producer gaps, substrate/runtime gaps, and bundle-contract obligations
+- the Rust product surface reflects the causal model directly instead of relying on external one-off analysis
+
+This milestone does not yet prove:
+
+- final image reconstruction is complete
+- bundle contract obligations have explicit materialized producers
+- BaseSystem and cryptex patch composition are fully integrated into a final deployable image artifact
