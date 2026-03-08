@@ -13,3 +13,9 @@ scripts/__pycache__/
 
 # Local rebuild and cache outputs
 _ban_grapple_audit.json
+_ban_grapple_contract_receipts.json
+_ban_grapple_broken_symlink_receipts.json
+_payloadv2_decoded.yaa
+_yaa_materialized.jsonl
+_yaa_xattrs/
+ty.py
