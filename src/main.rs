@@ -287,6 +287,14 @@ fn rebuild_image_command(args: &[String]) -> Result<(), String> {
         result.materialized.ownership_update_failures
     );
     println!(
+        "Xattr updates applied: {}",
+        result.materialized.xattr_updates_applied
+    );
+    println!(
+        "Xattr update failures: {}",
+        result.materialized.xattr_update_failures
+    );
+    println!(
         "Xattr sidecars written: {}",
         result.materialized.xattr_sidecars_written
     );

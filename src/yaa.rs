@@ -162,6 +162,8 @@ pub struct YaaMaterializationResult {
     pub timestamp_updates_applied: u64,
     pub ownership_updates_applied: u64,
     pub ownership_update_failures: u64,
+    pub xattr_updates_applied: u64,
+    pub xattr_update_failures: u64,
     pub xattr_sidecars_written: u64,
     pub last_next_record_offset: u64,
     pub metadata_path: PathBuf,
@@ -178,6 +180,12 @@ struct DeferredModeUpdate {
 struct DeferredTimestampUpdate {
     path: PathBuf,
     modified_time: YaaTimespec,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ParsedXattr {
+    name: String,
+    value: Vec<u8>,
 }
 
 #[derive(Debug, Serialize)]
@@ -702,6 +710,8 @@ impl<R: Read + Seek> YaaStreamReader<R> {
             timestamp_updates_applied: 0,
             ownership_updates_applied: 0,
             ownership_update_failures: 0,
+            xattr_updates_applied: 0,
+            xattr_update_failures: 0,
             xattr_sidecars_written: 0,
             last_next_record_offset: self.offset,
             metadata_path,
@@ -755,6 +765,7 @@ impl<R: Read + Seek> YaaStreamReader<R> {
                             &mut result,
                         )?;
                         apply_ownership_if_present(&target_path, &record, &mut result);
+                        self.apply_xattrs_if_present(&target_path, &record, &mut result);
                     }
                     Some(YaaObjectType::Link) => {
                         if let Some(parent) = target_path.parent() {
@@ -764,6 +775,7 @@ impl<R: Read + Seek> YaaStreamReader<R> {
                             symlink(link_target, &target_path)?;
                             result.links_created += 1;
                             apply_ownership_if_present(&target_path, &record, &mut result);
+                            self.apply_xattrs_if_present(&target_path, &record, &mut result);
                         }
                     }
                     _ => {}
@@ -831,6 +843,32 @@ impl<R: Read + Seek> YaaStreamReader<R> {
             payloads.push(metadata);
         }
         Ok(payloads)
+    }
+
+    fn apply_xattrs_if_present(
+        &mut self,
+        target_path: &Path,
+        record: &YaaRecord,
+        result: &mut YaaMaterializationResult,
+    ) {
+        for payload in &record.external_payloads {
+            if !matches!(payload.tag, YaaTag::Xattr) {
+                continue;
+            }
+            match self
+                .read_payload_blob(payload)
+                .and_then(|blob| parse_xattr_blob(&blob).map_err(YaaStreamError::Io))
+            {
+                Ok(parsed) => {
+                    let projected_name = project_linux_xattr_name(&parsed.name);
+                    match lsetxattr_path(target_path, &projected_name, &parsed.value) {
+                        Ok(()) => result.xattr_updates_applied += 1,
+                        Err(_) => result.xattr_update_failures += 1,
+                    }
+                }
+                Err(_) => result.xattr_update_failures += 1,
+            }
+        }
     }
 
     fn read_payload_blob(
@@ -1120,6 +1158,79 @@ fn set_timespec_path(path: &Path, modified_time: &YaaTimespec) -> io::Result<()>
     }
 }
 
+fn parse_xattr_blob(blob: &[u8]) -> io::Result<ParsedXattr> {
+    if blob.len() < 4 {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "xattr blob is shorter than the name-length prefix",
+        ));
+    }
+    let name_length = usize::try_from(u32::from_le_bytes([blob[0], blob[1], blob[2], blob[3]]))
+        .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "xattr name length overflow"))?;
+    let name_end = 4usize
+        .checked_add(name_length)
+        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "xattr name length overflow"))?;
+    if name_end > blob.len() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "xattr name length exceeds blob size",
+        ));
+    }
+
+    let raw_name = blob[4..name_end]
+        .strip_suffix(b"\0")
+        .unwrap_or(&blob[4..name_end]);
+    let name = String::from_utf8(raw_name.to_vec())
+        .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "xattr name is not valid UTF-8"))?;
+    let value = blob[name_end..].to_vec();
+    Ok(ParsedXattr { name, value })
+}
+
+fn project_linux_xattr_name(name: &str) -> String {
+    if name.starts_with("user.")
+        || name.starts_with("trusted.")
+        || name.starts_with("security.")
+        || name.starts_with("system.")
+    {
+        name.to_string()
+    } else if name.contains('.') {
+        format!("user.{name}")
+    } else {
+        format!("user.apple.{name}")
+    }
+}
+
+fn lsetxattr_path(path: &Path, name: &str, value: &[u8]) -> io::Result<()> {
+    let path_bytes = path.as_os_str().as_bytes();
+    let c_path = CString::new(path_bytes).map_err(|_| {
+        io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!("path '{}' contains an interior NUL byte", path.display()),
+        )
+    })?;
+    let c_name = CString::new(name).map_err(|_| {
+        io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!("xattr name '{name}' contains an interior NUL byte"),
+        )
+    })?;
+
+    let status = unsafe {
+        libc::lsetxattr(
+            c_path.as_ptr(),
+            c_name.as_ptr(),
+            value.as_ptr().cast(),
+            value.len(),
+            0,
+        )
+    };
+    if status == 0 {
+        Ok(())
+    } else {
+        Err(io::Error::last_os_error())
+    }
+}
+
 fn lchown_path(path: &Path, uid: u32, gid: u32) -> io::Result<()> {
     let bytes = path.as_os_str().as_bytes();
     let c_path = CString::new(bytes).map_err(|_| {
@@ -1251,13 +1362,18 @@ fn read_width_uint(
 
 #[cfg(test)]
 mod tests {
+    use std::ffi::CString;
     use std::fs;
-    use std::io::Cursor;
+    use std::io::{self, Cursor};
+    use std::os::unix::ffi::OsStrExt;
     use std::os::unix::fs::MetadataExt;
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
     use std::time::{SystemTime, UNIX_EPOCH};
 
-    use super::{YaaField, YaaObjectType, YaaStreamReader, YaaTag, parse_record, parse_records};
+    use super::{
+        YaaField, YaaObjectType, YaaStreamReader, YaaTag, parse_record, parse_records,
+        parse_xattr_blob, project_linux_xattr_name,
+    };
 
     #[derive(Clone, Copy)]
     struct TestFileMetadata {
@@ -1270,6 +1386,35 @@ mod tests {
 
     fn push_tag(bytes: &mut Vec<u8>, tag: &[u8; 4]) {
         bytes.extend_from_slice(tag);
+    }
+
+    fn lgetxattr_test(path: &Path, name: &str) -> io::Result<Vec<u8>> {
+        let path_bytes = path.as_os_str().as_bytes();
+        let c_path = CString::new(path_bytes)
+            .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "path contains NUL"))?;
+        let c_name = CString::new(name)
+            .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "name contains NUL"))?;
+
+        let size =
+            unsafe { libc::lgetxattr(c_path.as_ptr(), c_name.as_ptr(), std::ptr::null_mut(), 0) };
+        if size < 0 {
+            return Err(io::Error::last_os_error());
+        }
+        let size = usize::try_from(size)
+            .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "xattr size overflow"))?;
+        let mut value = vec![0u8; size];
+        let read = unsafe {
+            libc::lgetxattr(
+                c_path.as_ptr(),
+                c_name.as_ptr(),
+                value.as_mut_ptr().cast(),
+                value.len(),
+            )
+        };
+        if read < 0 {
+            return Err(io::Error::last_os_error());
+        }
+        Ok(value)
     }
 
     fn build_directory_record(path: &str, uid_tag: &[u8; 4], uid: u32) -> Vec<u8> {
@@ -1712,7 +1857,7 @@ mod tests {
         push_tag(&mut metadata, b"XATA");
         let xattr_blob = {
             let mut blob = Vec::new();
-            blob.extend_from_slice(&(20u32).to_le_bytes());
+            blob.extend_from_slice(&(19u32).to_le_bytes());
             blob.extend_from_slice(b"com.apple.rootless\0");
             blob.extend_from_slice(b"plist");
             blob
@@ -1740,6 +1885,81 @@ mod tests {
         let metadata_text = fs::read_to_string(&result.metadata_path).unwrap();
         assert!(metadata_text.contains("sha256_16"));
         assert!(metadata_text.contains("sidecar_path"));
+
+        let _ = fs::remove_dir_all(output_root);
+    }
+
+    #[test]
+    fn parses_xattr_blob_shape() {
+        let blob = {
+            let mut blob = Vec::new();
+            blob.extend_from_slice(&(19u32).to_le_bytes());
+            blob.extend_from_slice(b"com.apple.rootless\0");
+            blob.extend_from_slice(b"plist");
+            blob
+        };
+        let parsed = parse_xattr_blob(&blob).unwrap();
+        assert_eq!(parsed.name, "com.apple.rootless");
+        assert_eq!(parsed.value, b"plist");
+        assert_eq!(
+            project_linux_xattr_name(&parsed.name),
+            "user.com.apple.rootless"
+        );
+    }
+
+    #[test]
+    fn materialize_prefix_applies_projected_xattrs_to_files() {
+        let mut metadata = Vec::new();
+        push_tag(&mut metadata, b"TYP1");
+        metadata.push(b'F');
+        push_tag(&mut metadata, b"PATP");
+        metadata.extend_from_slice(&(16u16).to_le_bytes());
+        metadata.extend_from_slice(b"System/xattr.txt");
+        push_tag(&mut metadata, b"UID1");
+        metadata.push(0);
+        push_tag(&mut metadata, b"GID1");
+        metadata.push(0);
+        push_tag(&mut metadata, b"MOD2");
+        metadata.extend_from_slice(&0o644u16.to_le_bytes());
+        push_tag(&mut metadata, b"MTMS");
+        metadata.extend_from_slice(&456u64.to_le_bytes());
+        push_tag(&mut metadata, b"DATA");
+        metadata.extend_from_slice(&(5u16).to_le_bytes());
+        push_tag(&mut metadata, b"XATA");
+        let xattr_blob = {
+            let mut blob = Vec::new();
+            blob.extend_from_slice(&(19u32).to_le_bytes());
+            blob.extend_from_slice(b"com.apple.rootless\0");
+            blob.extend_from_slice(b"plist");
+            blob
+        };
+        metadata.extend_from_slice(&(xattr_blob.len() as u16).to_le_bytes());
+
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(b"YAA1");
+        bytes.extend_from_slice(&((metadata.len() + 6) as u16).to_le_bytes());
+        bytes.extend_from_slice(&metadata);
+        bytes.extend_from_slice(b"hello");
+        bytes.extend_from_slice(&xattr_blob);
+
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let output_root =
+            std::env::temp_dir().join(format!("yaa-materialize-apply-xattr-{unique}"));
+
+        let mut reader = YaaStreamReader::new(Cursor::new(bytes));
+        let result = reader.materialize_prefix(&output_root, 10).unwrap();
+        let value = lgetxattr_test(
+            &output_root.join("System/xattr.txt"),
+            "user.com.apple.rootless",
+        )
+        .unwrap();
+
+        assert_eq!(value, b"plist");
+        assert_eq!(result.xattr_updates_applied, 1);
+        assert_eq!(result.xattr_update_failures, 0);
 
         let _ = fs::remove_dir_all(output_root);
     }
